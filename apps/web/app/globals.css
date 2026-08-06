@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    /* Faint graticule wash so the linen reads as a map sheet, not flat paper.
+       Kept extremely subtle — structure, not decoration. */
+    background-color: theme("colors.linen");
+    background-image:
+      linear-gradient(theme("colors.graphite") 1px, transparent 1px),
+      linear-gradient(90deg, theme("colors.graphite") 1px, transparent 1px);
+    background-size: 96px 96px;
+    background-position: -1px -1px;
+    /* graticule at ~4% opacity via layered near-transparent lines */
+    background-blend-mode: normal;
+  }
+
+  /* The grid above is too strong at full graphite; tone it via a linen overlay. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: theme("colors.linen");
+    opacity: 0.94;
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+@layer components {
+  /* Neatline: the thin framing border of a map sheet. */
+  .neatline {
+    @apply border border-graphite/40;
+  }
+
+  /* Mono system-fact styling — surveyor's marginalia. */
+  .marginalia {
+    @apply font-mono text-graphite tabular-nums;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Traveling beacon segment along the input rule during retrieval. */
+@keyframes survey {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+/* Motion is a reserved signal — honor reduced-motion everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
