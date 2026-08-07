@@ -5,9 +5,11 @@
 
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "./tokens";
 import type {
+  Analytics,
   ChatResponse,
   DocumentDetail,
   DocumentOut,
+  EvalResults,
   SearchResponse,
   TokenPair,
   UserOut,
@@ -193,6 +195,18 @@ export const api = {
         503: "The answer service isn't configured. Set OPENROUTER_API_KEY on the backend and retry.",
         502: "The answer service failed upstream. Wait a moment and ask again.",
       },
+    });
+  },
+
+  async analytics(): Promise<Analytics> {
+    return request<Analytics>("/admin/analytics", {
+      messages: { 403: "Analytics is available to workspace admins only." },
+    });
+  },
+
+  async evals(): Promise<EvalResults> {
+    return request<EvalResults>("/admin/evals", {
+      messages: { 403: "Evaluation results are available to workspace admins only." },
     });
   },
 };

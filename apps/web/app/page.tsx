@@ -46,7 +46,7 @@ export default function Home() {
         {/* Cartouche — the map's title block, anchored to the left margin. */}
         <div className="relative z-10 flex flex-1 items-center">
           <div className="max-w-md px-6 sm:px-10">
-            <p className="marginalia mb-4 text-[0.7rem] uppercase tracking-cartouche text-pewter">
+            <p className="marginalia mb-4 text-[0.7rem] uppercase tracking-cartouche text-graphite">
               Multi-tenant agentic RAG
             </p>
             <h1 className="font-display text-5xl font-medium leading-[1.05] text-ink sm:text-6xl">

@@ -8,7 +8,16 @@ import type { ScoredChunk } from "@/lib/types";
 // color) that reveals its source chunk — text plus page — on hover, on keyboard
 // focus, and on click (which pins it open). Fully operable by keyboard.
 
-export function CitationMarker({ index, chunk }: { index: number; chunk: ScoredChunk | undefined }) {
+export function CitationMarker({
+  index,
+  chunk,
+  onHoverChange,
+}: {
+  index: number;
+  chunk: ScoredChunk | undefined;
+  /** Fired on hover/focus so the scene can highlight the matching node. */
+  onHoverChange?: (hovering: boolean) => void;
+}) {
   const [pinned, setPinned] = useState(false);
   const popId = useId();
 
@@ -20,7 +29,13 @@ export function CitationMarker({ index, chunk }: { index: number; chunk: ScoredC
         : "source";
 
   return (
-    <span className="group relative inline-block align-baseline">
+    <span
+      className="group relative inline-block align-baseline"
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
+      onFocus={() => onHoverChange?.(true)}
+      onBlur={() => onHoverChange?.(false)}
+    >
       <button
         type="button"
         aria-expanded={pinned}
@@ -47,7 +62,9 @@ export function CitationMarker({ index, chunk }: { index: number; chunk: ScoredC
         }
       >
         <span className="marginalia mb-1 flex items-center justify-between text-[0.7rem]">
-          <span className="uppercase tracking-cartouche text-beacon">source [{index}]</span>
+          <span className="rounded-sm bg-beacon/90 px-1 uppercase tracking-cartouche text-ink">
+            source [{index}]
+          </span>
           <span>{location}</span>
         </span>
         {chunk ? (

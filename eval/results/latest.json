@@ -1,0 +1,121 @@
+{
+  "generated_at": "2026-08-07T15:36:49.254481+00:00",
+  "model": "nvidia/nemotron-nano-9b-v2:free",
+  "dataset_size": 8,
+  "corpus_size": 4,
+  "metrics": {
+    "answer_accuracy": 1.0,
+    "citation_grounding": 1.0,
+    "refusal_accuracy": 1.0,
+    "retrieval_hit_rate": 1.0,
+    "avg_tokens_per_query": 2118.1,
+    "latency_p50_ms": 22084.7,
+    "latency_p95_ms": 32968.9
+  },
+  "results": [
+    {
+      "question": "What is the capital of Zubrowka?",
+      "expected_doc": "zubrowka.md",
+      "answerable_expected": true,
+      "answerable_actual": true,
+      "retrieval_hit": true,
+      "answer_correct": true,
+      "citation_grounded": true,
+      "refusal_correct": null,
+      "tokens": 1905,
+      "latency_ms": 32968.9,
+      "answer": "The capital of Zubrowka is Lutz."
+    },
+    {
+      "question": "What currency does Zubrowka use?",
+      "expected_doc": "zubrowka.md",
+      "answerable_expected": true,
+      "answerable_actual": true,
+      "retrieval_hit": true,
+      "answer_correct": true,
+      "citation_grounded": true,
+      "refusal_correct": null,
+      "tokens": 1914,
+      "latency_ms": 16953.5,
+      "answer": "The official currency of Zubrowka is the klubeck."
+    },
+    {
+      "question": "Who was the concierge of the Grand Budapest Hotel?",
+      "expected_doc": "grand-budapest.md",
+      "answerable_expected": true,
+      "answerable_actual": true,
+      "retrieval_hit": true,
+      "answer_correct": true,
+      "citation_grounded": true,
+      "refusal_correct": null,
+      "tokens": 2035,
+      "latency_ms": 22687.7,
+      "answer": "Monsieur Gustave H."
+    },
+    {
+      "question": "In which town is the Grand Budapest Hotel located?",
+      "expected_doc": "grand-budapest.md",
+      "answerable_expected": true,
+      "answerable_actual": true,
+      "retrieval_hit": true,
+      "answer_correct": true,
+      "citation_grounded": true,
+      "refusal_correct": null,
+      "tokens": 2044,
+      "latency_ms": 22743.9,
+      "answer": "The Grand Budapest Hotel is located in the town of Nebelsbad."
+    },
+    {
+      "question": "How does AtlasKB combine dense and sparse retrieval?",
+      "expected_doc": "atlaskb-architecture.md",
+      "answerable_expected": true,
+      "answerable_actual": true,
+      "retrieval_hit": true,
+      "answer_correct": true,
+      "citation_grounded": true,
+      "refusal_correct": null,
+      "tokens": 2127,
+      "latency_ms": 22084.7,
+      "answer": "AtlasKB combines dense and sparse retrieval by fusing the two result sets using Reciprocal Rank Fusion (RRF) to produce the final ranking."
+    },
+    {
+      "question": "What does AtlasKB use for dense vector retrieval?",
+      "expected_doc": "atlaskb-architecture.md",
+      "answerable_expected": true,
+      "answerable_actual": true,
+      "retrieval_hit": true,
+      "answer_correct": true,
+      "citation_grounded": true,
+      "refusal_correct": null,
+      "tokens": 1973,
+      "latency_ms": 15655.6,
+      "answer": "pgvector"
+    },
+    {
+      "question": "How many queries are included in the AtlasKB free tier?",
+      "expected_doc": "atlaskb-billing.md",
+      "answerable_expected": true,
+      "answerable_actual": true,
+      "retrieval_hit": true,
+      "answer_correct": true,
+      "citation_grounded": true,
+      "refusal_correct": null,
+      "tokens": 1909,
+      "latency_ms": 16642.4,
+      "answer": "The AtlasKB free tier includes 100 queries per month."
+    },
+    {
+      "question": "What is the boiling point of water at sea level?",
+      "expected_doc": null,
+      "answerable_expected": false,
+      "answerable_actual": false,
+      "retrieval_hit": null,
+      "answer_correct": null,
+      "citation_grounded": null,
+      "refusal_correct": true,
+      "tokens": 3038,
+      "latency_ms": 29215.9,
+      "answer": "I cannot answer this question from the available documents."
+    }
+  ]
+}

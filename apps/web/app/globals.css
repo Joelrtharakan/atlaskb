@@ -75,6 +75,51 @@
   animation: survey 1.1s linear infinite;
 }
 
+/* 2D fallback: threads draw in from the node; rings pulse subtly. */
+@keyframes atlas2d-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.atlas2d-draw {
+  stroke-dasharray: 24;
+  animation: atlas2d-draw 0.7s ease-out forwards;
+}
+
+@keyframes atlas2d-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.atlas2d-pulse {
+  animation: atlas2d-pulse 1.8s ease-in-out infinite;
+}
+
+/* Gentle reveal for a generated answer landing in the panel. */
+@keyframes atlas-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.atlas-fade-in {
+  animation: atlas-fade-in 0.4s ease-out both;
+}
+
 /* Motion is a reserved signal — honor reduced-motion everywhere. */
 @media (prefers-reduced-motion: reduce) {
   *,

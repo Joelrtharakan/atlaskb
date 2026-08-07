@@ -10,11 +10,39 @@ retrieval returns nothing.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 
 from app.config import settings
 from app.retrieval import RetrievedChunk
 
 CANNOT_ANSWER = "I cannot answer this question from the available documents."
+
+
+@dataclass(frozen=True)
+class TokenUsage:
+    """OpenRouter token accounting for a single request or an accumulated run."""
+
+    prompt: int = 0
+    completion: int = 0
+    total: int = 0
+
+    def __add__(self, other: "TokenUsage") -> "TokenUsage":
+        return TokenUsage(
+            self.prompt + other.prompt,
+            self.completion + other.completion,
+            self.total + other.total,
+        )
+
+
+def _usage_from(completion) -> TokenUsage:
+    u = getattr(completion, "usage", None)
+    if u is None:
+        return TokenUsage()
+    return TokenUsage(
+        prompt=getattr(u, "prompt_tokens", 0) or 0,
+        completion=getattr(u, "completion_tokens", 0) or 0,
+        total=getattr(u, "total_tokens", 0) or 0,
+    )
 
 _SYSTEM_PROMPT = """\
 You are AtlasKB, a retrieval-grounded question answering assistant.
@@ -48,18 +76,31 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
 
 
 class GroundedAnswer:
-    def __init__(self, answerable: bool, answer: str, citations: list[dict]):
+    def __init__(
+        self,
+        answerable: bool,
+        answer: str,
+        citations: list[dict],
+        usage: TokenUsage | None = None,
+    ):
         self.answerable = answerable
         self.answer = answer
         self.citations = citations
+        self.usage = usage or TokenUsage()
 
 
 class Assessment:
     """The agent's judgement on whether retrieved context can answer the question."""
 
-    def __init__(self, sufficient: bool, refined_query: str | None = None):
+    def __init__(
+        self,
+        sufficient: bool,
+        refined_query: str | None = None,
+        usage: TokenUsage | None = None,
+    ):
         self.sufficient = sufficient
         self.refined_query = refined_query
+        self.usage = usage or TokenUsage()
 
 
 _ASSESS_PROMPT = """\
@@ -102,13 +143,18 @@ def assess_context(question: str, chunks: list[RetrievedChunk]) -> Assessment:
                 },
             ],
         )
+        usage = _usage_from(completion)
         data = json.loads(completion.choices[0].message.content or "{}")
     except (json.JSONDecodeError, Exception):  # noqa: BLE001 - degrade gracefully
         return Assessment(sufficient=True, refined_query=None)
 
     sufficient = bool(data.get("sufficient"))
     refined = (data.get("refined_query") or "").strip() or None
-    return Assessment(sufficient=sufficient, refined_query=None if sufficient else refined)
+    return Assessment(
+        sufficient=sufficient,
+        refined_query=None if sufficient else refined,
+        usage=usage,
+    )
 
 
 def _client():
@@ -149,15 +195,16 @@ def generate_answer(question: str, chunks: list[RetrievedChunk]) -> GroundedAnsw
             },
         ],
     )
+    usage = _usage_from(completion)
     raw = completion.choices[0].message.content or "{}"
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
-        return GroundedAnswer(False, CANNOT_ANSWER, [])
+        return GroundedAnswer(False, CANNOT_ANSWER, [], usage)
 
     answerable = bool(data.get("answerable"))
     if not answerable:
-        return GroundedAnswer(False, data.get("answer") or CANNOT_ANSWER, [])
+        return GroundedAnswer(False, data.get("answer") or CANNOT_ANSWER, [], usage)
 
     citations: list[dict] = []
     for cit in data.get("citations", []) or []:
@@ -168,6 +215,6 @@ def generate_answer(question: str, chunks: list[RetrievedChunk]) -> GroundedAnsw
     # A grounded answer must actually cite retrieved chunks; otherwise treat it
     # as ungrounded rather than trusting an uncited claim.
     if not citations:
-        return GroundedAnswer(False, CANNOT_ANSWER, [])
+        return GroundedAnswer(False, CANNOT_ANSWER, [], usage)
 
-    return GroundedAnswer(True, data.get("answer") or "", citations)
+    return GroundedAnswer(True, data.get("answer") or "", citations, usage)

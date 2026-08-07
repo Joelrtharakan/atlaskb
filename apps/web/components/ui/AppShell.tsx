@@ -13,6 +13,8 @@ const NAV = [
   { href: "/documents", label: "Documents" },
   { href: "/search", label: "Search" },
   { href: "/chat", label: "Chat" },
+  { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/evals", label: "Evals" },
 ];
 
 // The in-app frame: a map-sheet neatline, a title block header with the survey

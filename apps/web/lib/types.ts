@@ -49,9 +49,67 @@ export type Citation = {
   chunk_ids: string[];
 };
 
+export type TokenUsage = {
+  prompt: number;
+  completion: number;
+  total: number;
+};
+
 export type ChatResponse = {
   answerable: boolean;
   answer: string;
   citations: Citation[];
   retrieved: ScoredChunk[];
+  cached?: boolean;
+  conversation_id?: string | null;
+  iterations?: number;
+  queries?: string[];
+  usage?: TokenUsage;
+};
+
+export type Analytics = {
+  tenant_id: string;
+  documents_total: number;
+  documents_by_status: Record<string, number>;
+  chunks_total: number;
+  conversations_total: number;
+  messages_total: number;
+  members_total: number;
+  active_api_keys: number;
+  cache_entries: number;
+  questions_last_7_days: { day: string; count: number }[];
+};
+
+export type EvalMetrics = {
+  answer_accuracy: number | null;
+  citation_grounding: number | null;
+  refusal_accuracy: number | null;
+  retrieval_hit_rate: number | null;
+  avg_tokens_per_query: number;
+  latency_p50_ms: number;
+  latency_p95_ms: number;
+};
+
+export type EvalResultRow = {
+  question: string;
+  expected_doc: string | null;
+  answerable_expected: boolean;
+  answerable_actual: boolean;
+  retrieval_hit: boolean | null;
+  answer_correct: boolean | null;
+  citation_grounded: boolean | null;
+  refusal_correct: boolean | null;
+  tokens: number;
+  latency_ms: number;
+  answer: string;
+};
+
+export type EvalResults = {
+  available: boolean;
+  generated_at?: string;
+  model?: string;
+  dataset_size?: number;
+  corpus_size?: number;
+  metrics?: EvalMetrics;
+  results?: EvalResultRow[];
 };

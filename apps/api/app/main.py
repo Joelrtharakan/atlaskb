@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.config import settings
 from app.logging_config import configure_logging, get_logger
 from app.routers import (
+    admin,
     apikeys,
     auth,
     chat,
@@ -27,8 +28,24 @@ class HealthResponse(BaseModel):
     status: str
 
 
+def _require_runtime_secrets() -> None:
+    """Fail fast if required secrets are unset — no baked-in defaults to fall
+    back on, so the API can never silently run on placeholder credentials."""
+    missing = [
+        name
+        for name, value in (("DATABASE_URL", settings.database_url), ("JWT_SECRET", settings.jwt_secret))
+        if not value
+    ]
+    if missing:
+        raise RuntimeError(
+            f"Missing required configuration: {', '.join(missing)}. "
+            "Set them in the environment / .env (see .env.example)."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _require_runtime_secrets()
     log.info("api.startup", app_name=settings.app_name)
     yield
     log.info("api.shutdown", app_name=settings.app_name)
@@ -75,6 +92,7 @@ async def health() -> HealthResponse:
 app.include_router(auth.router)
 app.include_router(workspaces.router)
 app.include_router(apikeys.router)
+app.include_router(admin.router)
 app.include_router(documents.router)
 app.include_router(conversations.router)
 app.include_router(search.router)

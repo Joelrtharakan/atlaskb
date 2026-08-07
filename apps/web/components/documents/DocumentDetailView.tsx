@@ -77,7 +77,7 @@ export function DocumentDetailView({ id }: { id: string }) {
       ) : (
         <>
           <div>
-            <p className="marginalia text-[0.7rem] uppercase tracking-cartouche text-pewter">
+            <p className="marginalia text-[0.7rem] uppercase tracking-cartouche text-graphite">
               Territory
             </p>
             <h1 className="mt-1 break-words font-display text-3xl font-medium text-ink">

@@ -91,6 +91,12 @@ class Citation(BaseModel):
     chunk_ids: list[str]
 
 
+class TokenUsageOut(BaseModel):
+    prompt: int = 0
+    completion: int = 0
+    total: int = 0
+
+
 class ChatResponse(BaseModel):
     answerable: bool
     answer: str
@@ -103,6 +109,8 @@ class ChatResponse(BaseModel):
     conversation_id: str | None = None
     iterations: int = 0
     queries: list[str] = []
+    # Tokens actually spent on this request (0 on a cache hit).
+    usage: TokenUsageOut = TokenUsageOut()
 
 
 # --- Workspaces / tenancy ---
@@ -183,3 +191,22 @@ class ConversationOut(BaseModel):
 
 class ConversationDetail(ConversationOut):
     messages: list[MessageOut] = []
+
+
+# --- Admin analytics ---
+class DailyCount(BaseModel):
+    day: str
+    count: int
+
+
+class AnalyticsResponse(BaseModel):
+    tenant_id: str
+    documents_total: int
+    documents_by_status: dict[str, int]
+    chunks_total: int
+    conversations_total: int
+    messages_total: int
+    members_total: int
+    active_api_keys: int
+    cache_entries: int
+    questions_last_7_days: list[DailyCount]

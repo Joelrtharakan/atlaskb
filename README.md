@@ -1,227 +1,203 @@
 # AtlasKB
 
-AtlasKB is a multi-tenant, agentic RAG knowledge platform: teams ingest their
-documents into isolated tenant workspaces, and an agent-driven retrieval pipeline
-answers questions with citations grounded in that tenant's knowledge base. This
-repository contains the web frontend, the API, and the async worker fleet that
-will power ingestion, embedding, and retrieval.
+**AtlasKB is a multi-tenant, agentic RAG platform that answers questions from your
+documents with real citations — and shows you *why*.** Teams upload documents into
+isolated workspaces; a LangGraph agent plans retrieval over a hybrid
+(dense + full-text) index, checks whether it has enough to answer, and returns a
+grounded answer where every claim links back to the exact source chunk. A 3D
+"Living Atlas" turns each answer into a map: the camera flies to the documents
+that answered you and lights a route between them.
 
-**Status: backend MVP.** Single-user Q&A over uploaded documents works end to
-end: JWT auth, PDF/Markdown/HTML upload with async ingestion (parse → chunk →
-embed → pgvector), hybrid retrieval (dense cosine + Postgres full-text, fused
-with RRF), and grounded generation with citations via OpenRouter. Multi-tenancy,
-the agent loop, and caching are intentionally out of scope for this phase (a
-`tenant_id` placeholder column exists so the schema is forward-compatible).
+> **Demo.** No public instance is hosted — but the clip below is a real recording,
+> and the whole stack runs locally in ~2 minutes (see [Quickstart](#quickstart)).
 
-See [Backend MVP](#backend-mvp-local-quickstart) below for the quickstart and a
-verified end-to-end curl sequence.
+![The Living Atlas answering a real question](docs/media/living-atlas.gif)
 
-## Services
+<sub>Ask → the retrieved document nodes light amber and draw threads to the answer point → the cited answer appears in the panel; hovering a citation highlights its node. Falls back to a 2D map under reduced-motion / low-power.</sub>
 
-| Service   | Stack                                   | Local port |
-| --------- | --------------------------------------- | ---------- |
-| `web`     | Next.js 14 (App Router, TS, Tailwind)   | 3000       |
-| `api`     | FastAPI (Python 3.12, Pydantic v2)      | 8000       |
-| `workers` | Celery (Redis broker)                   | —          |
-| `postgres`| `pgvector/pgvector` (Postgres 16)       | 15432      |
-| `redis`   | Redis 7                                 | 6380       |
+---
 
-> Host ports 15432/6380 map to the containers' standard 5432/6379 to avoid
-> clashing with a Postgres/Redis you may already run locally.
+## What it does
 
-## Run locally
+- **Grounded Q&A with citations.** Answers are generated *only* from retrieved
+  chunks; each claim maps to the chunk IDs that support it, and the agent refuses
+  ("cannot answer from the available documents") rather than hallucinate.
+- **Hybrid retrieval.** pgvector cosine similarity (dense) fused with Postgres
+  full-text search (sparse/BM25-style) via Reciprocal Rank Fusion.
+- **Agentic retrieval loop (LangGraph).** plan → retrieve → assess sufficiency →
+  optionally re-query (hard-bounded) → generate. Re-querying is capped so cost
+  can't run away.
+- **Multi-tenancy + RBAC + per-document ACLs.** Every document, chunk, and
+  conversation is tenant-scoped; documents can be restricted to specific users
+  even within a tenant. Roles: viewer / editor / admin.
+- **Semantic cache + rate limiting (Redis).** Repeated queries are served from
+  cache (no model call); per-user and per-tenant fixed-window limits.
+- **Programmatic access.** Scoped API keys usable on `/search` and `/chat`.
+- **Living Atlas (React Three Fiber).** A retrieval-reactive 3D visualization
+  with a fully-functional 2D fallback and reduced-motion support.
+- **Admin surfaces.** `/admin/analytics` (live tenant counts, cache size) and
+  `/admin/evals` (latest eval run).
 
-Prerequisites: Docker + Docker Compose.
+## Architecture
 
-```bash
-docker compose up --build
+```
+   Browser (:3000)                 Next.js 14 · React · Tailwind · React-Three-Fiber
+        │  JWT / X-API-Key (CORS)
+        ▼
+   FastAPI (:8000)   auth · RBAC/ACL · rate-limit · semantic cache
+        │   /search  /chat  /documents  /workspaces  /api-keys  /admin/*
+        ├───────────────┬──────────────────────┬─────────────────────────┐
+        ▼               ▼                       ▼                         ▼
+     Redis           Postgres 16            Celery worker            OpenRouter
+  cache + limits   + pgvector           parse→chunk→embed→write    (generation only;
+                   dense + FTS index    (sentence-transformers,     model configurable)
+                                         local embeddings)
+        ▲               │
+        │               │  /chat agent (LangGraph):
+        └── cache ◄──────┤   plan → retrieve (RBAC-scoped hybrid) → assess
+                         │   → re-query (bounded) → generate → grounded citations
+                         ▼
+              answer + citations + token usage
 ```
 
-Then:
+Embeddings are produced locally (sentence-transformers) or via the OpenAI
+embeddings API — **never** through OpenRouter (which doesn't serve embeddings).
+Only answer *generation* uses OpenRouter, with a configurable model slug.
 
-- Web UI: http://localhost:3000
-- API health check: http://localhost:8000/health → `{"status":"ok"}`
-- API docs: http://localhost:8000/docs
+## Measured results
 
-Stop and clean up:
+All numbers below are **measured on this project**, not estimates unless labelled.
+Reproduce with `eval/run_eval.py` and `eval/load_test.py`.
+
+### Retrieval & answer quality (`eval/run_eval.py`)
+
+8-question labelled set over a 4-document corpus, generation model
+`nvidia/nemotron-nano-9b-v2:free`:
+
+| Metric | Result |
+| --- | --- |
+| Answer accuracy | **100%** (8/8) |
+| Citation grounding (cited the right doc) | **100%** |
+| Refusal accuracy (out-of-corpus → refuses) | **100%** |
+| Retrieval hit rate (expected doc retrieved) | **100%** |
+| Avg tokens / query | **~2,118** |
+
+<sub>Small, curated set (N=8) — a smoke-grade quality gate, not a benchmark. The
+`/admin/evals` page renders the latest run.</sub>
+
+### Latency & throughput (`eval/load_test.py`, single API worker, rate-limiter off)
+
+| Path | p50 | p95 | Throughput | Cache hit |
+| --- | --- | --- | --- | --- |
+| `/search` cold (cache miss) | **75 ms** | **101 ms** | 127 req/s | — |
+| `/search` warm (cache hit) | **29 ms** | **49 ms** | **627 req/s** | 100% |
+| `/chat` cold (agent + LLM) | **23.2 s** | **31.2 s** | — | — |
+| `/chat` warm (cache hit) | **20 ms** | **45 ms** | **418 req/s** | 100% |
+
+- **Retrieval is sub-100 ms** at p50/p95 (hybrid dense + FTS + RRF).
+- **`/chat` cold latency is the external model**, not AtlasKB: the free-tier model
+  is slow and the agent makes 2+ calls. The semantic cache turns a repeated
+  question from **~23 s → ~20 ms (~1000×)** and **$0 model cost**.
+
+### Cost per query
+
+- **$0 measured** on the free-tier model; **$0** for any cache hit (no model call).
+- At measured ~2,118 tokens/query, projected cost on paid small models is roughly
+  **$0.003–0.006 / query** (e.g. Claude Haiku 4.5 / GPT-5.1 rates) — a projection,
+  not billed.
+
+## Tech stack
+
+- **Backend:** Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic,
+  Postgres 16 + **pgvector**, Redis, Celery, **LangGraph**, OpenAI SDK (→ OpenRouter),
+  sentence-transformers, argon2 + PyJWT, structlog.
+- **Frontend:** Next.js 14 (App Router, TypeScript), Tailwind, **React Three Fiber
+  / drei / three**, Playwright (e2e).
+- **Tooling:** `uv` workspace (api + workers), Docker Compose (Postgres/Redis),
+  ruff, pytest.
+
+## Quickstart
+
+Prerequisites: Docker, [`uv`](https://docs.astral.sh/uv/), Node 20+.
 
 ```bash
-docker compose down -v
+# 0. Install + configure (from the repo root)
+uv sync --all-packages
+cp .env.example .env         # set POSTGRES_PASSWORD, JWT_SECRET, OPENROUTER_API_KEY
+
+# 1. Infra: Postgres+pgvector (host 15432) and Redis (host 6380)
+docker compose up -d postgres redis
+
+# 2. Database schema
+set -a && . ./.env && set +a
+(cd apps/api && uv run alembic upgrade head)
+
+# 3. API  (terminal 1)
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+
+# 4. Worker  (terminal 2) — --pool=solo: PyTorch's Metal backend aborts in a forked worker on macOS
+uv run celery -A atlaskb_workers.celery_app worker --loglevel=info --pool=solo
+
+# 5. Web  (terminal 3)
+cd apps/web && npm install && npm run dev      # http://localhost:3000
 ```
 
-> **Note (backend MVP):** the `api`/`workers` images build from the repo root as
-> a uv workspace and pull a local ML/embeddings stack, so first build is large.
-> The **verified** path for this phase is running Postgres + Redis via compose
-> and the API + worker locally with `uv` — see
-> [Backend MVP (local quickstart)](#backend-mvp-local-quickstart).
+- Embeddings default to a local sentence-transformers model (no key; downloads on
+  first use). `/chat` generation needs `OPENROUTER_API_KEY`; the model slug is
+  configurable via `OPENROUTER_MODEL` (a `:free` slug works with no credits).
+- Secrets are read from the environment / `.env` — the app refuses to boot if
+  `DATABASE_URL` or `JWT_SECRET` is unset; no credential literals live in source.
+
+## Tests, eval & load
+
+```bash
+# Backend unit + integration tests (real Postgres+pgvector, dedicated Redis DB)
+cd apps/api && uv run pytest                     # 61 passing
+
+# Frontend end-to-end (Playwright drives signup→upload→ask→cited answer, +atlas)
+cd apps/web && npx playwright install chromium && npm run test:e2e
+
+# Quality eval → writes eval/results/latest.json (served at /admin/evals)
+uv run python eval/run_eval.py
+
+# Load test → writes eval/results/load-latest.json
+#   run the API with RATE_LIMIT_ENABLED=false so the limiter doesn't distort latency
+uv run python eval/load_test.py
+```
+
+## API surface
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| POST | `/auth/signup` · `/auth/login` · `/auth/refresh` | — | JWT auth |
+| POST/GET | `/workspaces`, `/workspaces/{id}/members`, `/workspaces/{id}/invite` | JWT | Tenants, members, roles |
+| POST/GET/DELETE | `/api-keys` | JWT | Scoped programmatic keys |
+| POST/GET | `/documents`, `/documents/{id}`, `/documents/{id}/acl` | JWT | Upload, list, detail, ACLs |
+| POST | `/search` | JWT / API key | Raw hybrid retrieval (ranked chunks + scores) |
+| POST | `/chat` | JWT / API key | Grounded answer + citations + token usage |
+| GET | `/conversations`, `/conversations/{id}` | JWT | Conversation history |
+| GET | `/admin/analytics`, `/admin/evals` | JWT (admin) | Tenant analytics, eval results |
+
+Tenant is selected with the optional `X-Tenant-Id` header (defaults to the user's
+personal workspace); `X-API-Key` authenticates programmatic calls.
 
 ## Repository layout
 
 ```
 atlaskb/
   apps/
-    web/            # Next.js 14 frontend
-    api/            # FastAPI service (uv-managed)
-    workers/        # Celery worker package
-  infra/
-    docker/         # Dockerfiles for web, api, workers
-    k8s/            # Kubernetes manifests (placeholder)
-    terraform/      # Infra as code (placeholder)
-  eval/             # RAGAS eval datasets/scripts (placeholder)
-  .github/workflows # CI (placeholder)
+    web/       # Next.js 14 frontend (+ Living Atlas, Playwright e2e)
+    api/       # FastAPI service (auth, RBAC, retrieval, agent, cache, admin)
+    workers/   # Celery ingestion worker
+  eval/        # eval + load-test harnesses, corpus, results/
+  infra/docker # Dockerfiles
+  docs/        # design plan + media
   docker-compose.yml
 ```
 
-## Local development (outside Docker)
+## Status
 
-The API and workers form a single [uv](https://docs.astral.sh/uv/) **workspace**
-(`apps/api` + `apps/workers` share the domain layer in `app/`). Sync and run
-everything from the repo root:
-
-```bash
-uv sync --all-packages
-```
-
-### Web
-
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-See the Backend MVP quickstart below for running the API, worker, and database.
-
-## Backend MVP (local quickstart)
-
-Run all commands **from the repo root** (so `.env` is picked up).
-
-```bash
-# 0. Dependencies + config
-uv sync --all-packages
-cp .env.example .env          # fill in OPENROUTER_API_KEY to enable /chat
-
-# 1. Infra (Postgres+pgvector on 15432, Redis on 6380)
-docker compose up -d postgres redis
-
-# 2. Database schema
-cd apps/api && DATABASE_URL="postgresql+psycopg://atlaskb:atlaskb@localhost:15432/atlaskb" \
-  uv run alembic upgrade head && cd ../..
-
-# 3. API (terminal 1)
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-
-# 4. Worker (terminal 2)
-#    --pool=solo avoids a macOS crash where PyTorch's Metal backend aborts
-#    inside a forked Celery worker (embeddings run on CPU regardless).
-uv run celery -A atlaskb_workers.celery_app worker --loglevel=info --pool=solo
-```
-
-- Embeddings default to a local `sentence-transformers` model (no API key; the
-  model downloads on first use). Set `EMBEDDING_BACKEND=openai` to use the
-  OpenAI embeddings API instead. Embeddings never go through OpenRouter.
-- `/chat` generation goes through OpenRouter; set `OPENROUTER_API_KEY` and
-  optionally `OPENROUTER_MODEL` (see `.env.example`).
-
-### Endpoints
-
-| Method | Path                | Auth | Purpose                                        |
-| ------ | ------------------- | ---- | ---------------------------------------------- |
-| POST   | `/auth/signup`      | —    | Create a user                                  |
-| POST   | `/auth/login`       | —    | Get an access + refresh token pair             |
-| POST   | `/auth/refresh`     | —    | Exchange a refresh token for a new pair        |
-| POST   | `/documents`        | JWT  | Upload a PDF/MD/HTML; enqueues async ingestion |
-| GET    | `/documents`        | JWT  | List documents with status                     |
-| GET    | `/documents/{id}`   | JWT  | Document detail incl. chunk count              |
-| POST   | `/search`           | JWT  | Raw hybrid retrieval (ranked chunks + scores)  |
-| POST   | `/chat`             | JWT  | Grounded answer with citations → chunk IDs     |
-
-### End-to-end curl sequence
-
-```bash
-API=http://127.0.0.1:8000
-
-# signup + login
-curl -s -X POST $API/auth/signup -H 'Content-Type: application/json' \
-  -d '{"email":"you@example.com","password":"password123"}'
-ACCESS=$(curl -s -X POST $API/auth/login -H 'Content-Type: application/json' \
-  -d '{"email":"you@example.com","password":"password123"}' | jq -r .access_token)
-
-# upload a PDF -> returns {"id": ..., "status": "processing"}
-DOC=$(curl -s -X POST $API/documents -H "Authorization: Bearer $ACCESS" \
-  -F "file=@mydoc.pdf;type=application/pdf" | jq -r .id)
-
-# poll until ready
-until [ "$(curl -s $API/documents/$DOC -H "Authorization: Bearer $ACCESS" | jq -r .status)" = ready ]; do
-  sleep 2; done
-curl -s $API/documents/$DOC -H "Authorization: Bearer $ACCESS" | jq   # shows chunk_count
-
-# inspect retrieval directly
-curl -s -X POST $API/search -H "Authorization: Bearer $ACCESS" \
-  -H 'Content-Type: application/json' -d '{"query":"your question","top_k":5}' | jq
-
-# grounded, cited answer (returns "cannot answer" if not supported by chunks)
-curl -s -X POST $API/chat -H "Authorization: Bearer $ACCESS" \
-  -H 'Content-Type: application/json' -d '{"question":"your question"}' | jq
-```
-
-`/chat` returns structured JSON: `answerable`, `answer`, `citations` (each
-mapping a `claim` to the `chunk_ids` that support it), and the `retrieved`
-chunks with their fused/dense/sparse scores.
-
-### Tests
-
-```bash
-cd apps/api && uv run pytest
-```
-
-Unit tests cover chunking and RRF ranking; integration tests run `/auth`,
-`/documents`, `/search`, and `/chat` against a **real** Postgres+pgvector test
-database (created automatically as `atlaskb_test` on the compose Postgres).
-
-## Frontend MVP (local quickstart)
-
-The web app (`apps/web`) is a Next.js 14 + TypeScript + Tailwind client wired to
-the Phase 2 API. It applies the Phase 1 cartography design tokens/typography but
-**does not** render the 3D Living Atlas yet — plain, well-typeset UI only.
-
-Pages: `/login`, `/signup`, `/documents` (register + upload with a contour-line
-progress indicator that polls to ready/failed), `/documents/[id]` (metadata +
-chunk count), `/search` (raw hybrid results with dense/sparse/fused scores), and
-`/chat` (grounded answers with inline `[n]` citation markers that expand to the
-source chunk + page).
-
-**1. Run the backend** (see the Backend MVP quickstart above): Postgres + Redis
-via compose, plus the API and worker locally. `/chat` needs `OPENROUTER_API_KEY`
-set in `.env`.
-
-**2. Run the web app** (separate terminal):
-
-```bash
-cd apps/web
-npm install
-# API base URL — defaults to http://localhost:8000 if unset:
-echo 'NEXT_PUBLIC_API_URL=http://localhost:8000' > .env.local
-npm run dev            # http://localhost:3000
-```
-
-The API enables CORS for `http://localhost:3000` and `http://127.0.0.1:3000`
-(configurable via the `CORS_ORIGINS` setting).
-
-### End-to-end test
-
-One Playwright test drives the whole product loop against the real backend:
-**sign up → upload a document → wait until ready → ask a question → see a cited
-answer on screen** (and expands the citation to its source).
-
-```bash
-# With Postgres + Redis + API + worker already running (and OPENROUTER_API_KEY set):
-cd apps/web
-npm install
-npx playwright install chromium   # first time only
-npm run test:e2e
-```
-
-Playwright starts the Next.js dev server itself; it expects the backend to be up
-(it will reuse an already-running dev server on :3000). Verified passing:
-`1 passed` in ~30s.
+Feature-complete reference implementation: multi-tenant auth/RBAC/ACL, async
+ingestion, hybrid retrieval, an agentic cited-answer pipeline, semantic cache +
+rate limiting, API keys, the 3D Living Atlas with a 2D fallback, and admin
+analytics/evals — all covered by automated tests and the measured results above.

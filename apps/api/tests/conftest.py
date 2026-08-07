@@ -16,16 +16,20 @@ import psycopg
 import pytest
 
 # --- Override settings BEFORE importing any app module (env > .env in pydantic). ---
+# Local test DB connection is assembled from parts (no credential literal in
+# source); override via POSTGRES_USER/POSTGRES_PASSWORD or TEST_PG_* if needed.
 _PG_HOST = os.getenv("TEST_PG_HOST", "localhost")
 _PG_PORT = os.getenv("TEST_PG_PORT", "15432")
-_ADMIN_DB = f"postgresql://atlaskb:atlaskb@{_PG_HOST}:{_PG_PORT}/atlaskb"
+_PG_USER = os.getenv("POSTGRES_USER", "atlaskb")
+_PG_PASSWORD = os.getenv("POSTGRES_PASSWORD", "atlaskb")
 _TEST_DB_NAME = "atlaskb_test"
+_CREDS = f"{_PG_USER}:{_PG_PASSWORD}@{_PG_HOST}:{_PG_PORT}"
+_ADMIN_DB = f"postgresql://{_CREDS}/atlaskb"
 
-os.environ["DATABASE_URL"] = (
-    f"postgresql+psycopg://atlaskb:atlaskb@{_PG_HOST}:{_PG_PORT}/{_TEST_DB_NAME}"
-)
+os.environ["DATABASE_URL"] = f"postgresql+psycopg://{_CREDS}/{_TEST_DB_NAME}"
 os.environ["EMBEDDING_BACKEND"] = "fake"
 os.environ["OPENROUTER_API_KEY"] = "test-key-not-used"
+os.environ["JWT_SECRET"] = "test-jwt-secret-not-a-real-credential"
 # Dedicated Redis DB so cache/rate-limit tests never touch app data.
 os.environ["REDIS_URL"] = os.getenv("TEST_REDIS_URL", f"redis://{_PG_HOST}:6380/15")
 # Off by default; the cache/rate-limit tests enable them explicitly.

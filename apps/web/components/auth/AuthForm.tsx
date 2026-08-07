@@ -89,7 +89,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
         <div className="flex flex-1 items-center px-6 sm:px-10">
           <div className="w-full max-w-sm">
-            <p className="marginalia mb-3 text-[0.7rem] uppercase tracking-cartouche text-pewter">
+            <p className="marginalia mb-3 text-[0.7rem] uppercase tracking-cartouche text-graphite">
               {copy.eyebrow}
             </p>
             <h1 className="font-display text-3xl font-medium leading-tight text-ink sm:text-4xl">

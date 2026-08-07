@@ -22,7 +22,7 @@ from app.models import Conversation, Message
 from app.ratelimit import check_rate_limit
 from app.rbac import Principal
 from app.retrieval import hybrid_search
-from app.schemas import ChatRequest, ChatResponse, Citation, ScoredChunk
+from app.schemas import ChatRequest, ChatResponse, Citation, ScoredChunk, TokenUsageOut
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 log = get_logger(__name__)
@@ -97,6 +97,8 @@ def chat(
             conversation_id=convo.id,
             iterations=cached.get("iterations", 0),
             queries=cached.get("queries", []),
+            # A cache hit spends no tokens.
+            usage=TokenUsageOut(),
         )
 
     def retrieve(query: str):
@@ -140,6 +142,11 @@ def chat(
     )
     db.commit()
 
+    usage = TokenUsageOut(
+        prompt=result.usage.prompt,
+        completion=result.usage.completion,
+        total=result.usage.total,
+    )
     payload = ChatResponse(
         answerable=grounded.answerable,
         answer=answer,
@@ -149,6 +156,7 @@ def chat(
         conversation_id=convo.id,
         iterations=result.iterations,
         queries=result.queries,
+        usage=usage,
     )
     # Write-through (without the per-request conversation_id / cached flag).
     cache_set(
@@ -168,6 +176,7 @@ def chat(
         tenant_id=principal.tenant_id,
         answerable=payload.answerable,
         iterations=payload.iterations,
+        tokens=usage.total,
         cached=False,
     )
     return payload

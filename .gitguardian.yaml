@@ -1,0 +1,8 @@
+# GitGuardian configuration.
+# .env.example ships intentional, non-functional placeholder values (CHANGE_ME…)
+# so contributors know which variables to set. It contains no real secrets.
+version: 2
+
+secret:
+  ignored-paths:
+    - "**/.env.example"

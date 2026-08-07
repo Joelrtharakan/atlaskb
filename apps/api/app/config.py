@@ -11,7 +11,9 @@ class Settings(BaseSettings):
     app_name: str = "atlaskb-api"
     log_level: str = "INFO"
 
-    database_url: str = "postgresql+psycopg://atlaskb:atlaskb@postgres:5432/atlaskb"
+    # No credential literals in source: supply these via the environment / .env.
+    # The API refuses to start if database_url or jwt_secret is unset (see main).
+    database_url: str = ""
     redis_url: str = "redis://redis:6379/0"
 
     # Browser origins allowed to call the API (the Next.js web app).
@@ -21,7 +23,8 @@ class Settings(BaseSettings):
     ]
 
     # --- Auth ---
-    jwt_secret: str = "dev-secret-change-me"
+    # Required in every environment; supply via JWT_SECRET (see .env.example).
+    jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 30
     refresh_token_ttl_days: int = 14
@@ -75,6 +78,11 @@ class Settings(BaseSettings):
     # Plaintext prefix for generated keys and how many chars form the lookup id.
     api_key_prefix: str = "atlk"
     api_key_lookup_len: int = 16
+
+    # --- Admin / evals ---
+    # Where the eval runner writes its latest results (repo-relative, read by the
+    # /admin/evals endpoint). Resolved from the process CWD (repo root in dev).
+    eval_results_path: str = "eval/results/latest.json"
 
 
 settings = Settings()

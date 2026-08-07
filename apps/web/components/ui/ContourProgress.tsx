@@ -25,7 +25,7 @@ export function ContourProgress({ size = 20, label, className = "" }: Props) {
         width={size}
         height={size}
         aria-hidden="true"
-        className="text-pewter"
+        className="text-graphite"
       >
         {RINGS.map((r, i) => (
           <circle

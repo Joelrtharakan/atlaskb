@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-08-07T18:23:45.905753+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "phases": [
+    {
+      "name": "search_cold",
+      "requests": 200,
+      "wall_seconds": 1.57,
+      "throughput_rps": 127.5,
+      "p50_ms": 75.2,
+      "p95_ms": 100.6,
+      "p99_ms": 136.0,
+      "mean_ms": 77.7,
+      "cache_hit_rate": 0.0,
+      "errors": 0
+    },
+    {
+      "name": "search_warm",
+      "requests": 200,
+      "wall_seconds": 0.32,
+      "throughput_rps": 627.5,
+      "p50_ms": 28.6,
+      "p95_ms": 48.7,
+      "p99_ms": 52.9,
+      "mean_ms": 29.9,
+      "cache_hit_rate": 1.0,
+      "errors": 0
+    },
+    {
+      "name": "chat_cold",
+      "requests": 6,
+      "wall_seconds": 70.2,
+      "throughput_rps": 0.1,
+      "p50_ms": 23180.9,
+      "p95_ms": 31183.0,
+      "p99_ms": 31183.0,
+      "mean_ms": 23338.1,
+      "cache_hit_rate": 0.0,
+      "errors": 0,
+      "note": "LLM-bound; free-tier model (nvidia/nemotron-nano-9b-v2:free), agent makes 2+ calls. Latency is the external model, not AtlasKB."
+    },
+    {
+      "name": "chat_warm",
+      "requests": 100,
+      "wall_seconds": 0.24,
+      "throughput_rps": 418.2,
+      "p50_ms": 20.0,
+      "p95_ms": 44.6,
+      "p99_ms": 51.2,
+      "mean_ms": 23.0,
+      "cache_hit_rate": 1.0,
+      "errors": 0,
+      "note": "cache-seeded (no LLM call); measures the cache-hit request path"
+    }
+  ]
+}

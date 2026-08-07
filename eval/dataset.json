@@ -1,0 +1,53 @@
+{
+  "description": "Small labelled Q&A set over eval/corpus for grounded-RAG evaluation.",
+  "questions": [
+    {
+      "question": "What is the capital of Zubrowka?",
+      "expected_doc": "zubrowka.md",
+      "answerable": true,
+      "expected_substrings": ["Lutz"]
+    },
+    {
+      "question": "What currency does Zubrowka use?",
+      "expected_doc": "zubrowka.md",
+      "answerable": true,
+      "expected_substrings": ["klubeck"]
+    },
+    {
+      "question": "Who was the concierge of the Grand Budapest Hotel?",
+      "expected_doc": "grand-budapest.md",
+      "answerable": true,
+      "expected_substrings": ["Gustave"]
+    },
+    {
+      "question": "In which town is the Grand Budapest Hotel located?",
+      "expected_doc": "grand-budapest.md",
+      "answerable": true,
+      "expected_substrings": ["Nebelsbad"]
+    },
+    {
+      "question": "How does AtlasKB combine dense and sparse retrieval?",
+      "expected_doc": "atlaskb-architecture.md",
+      "answerable": true,
+      "expected_substrings": ["Reciprocal Rank Fusion", "RRF"]
+    },
+    {
+      "question": "What does AtlasKB use for dense vector retrieval?",
+      "expected_doc": "atlaskb-architecture.md",
+      "answerable": true,
+      "expected_substrings": ["pgvector"]
+    },
+    {
+      "question": "How many queries are included in the AtlasKB free tier?",
+      "expected_doc": "atlaskb-billing.md",
+      "answerable": true,
+      "expected_substrings": ["100"]
+    },
+    {
+      "question": "What is the boiling point of water at sea level?",
+      "expected_doc": null,
+      "answerable": false,
+      "expected_substrings": []
+    }
+  ]
+}

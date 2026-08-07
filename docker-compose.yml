@@ -1,17 +1,20 @@
 services:
   postgres:
     image: pgvector/pgvector:pg16
+    # Credentials come from the environment (Compose auto-loads the repo-root
+    # .env). No secret literals live in this tracked file; POSTGRES_PASSWORD is
+    # required — copy .env.example to .env and set it.
     environment:
-      POSTGRES_USER: atlaskb
-      POSTGRES_PASSWORD: atlaskb
-      POSTGRES_DB: atlaskb
+      POSTGRES_USER: ${POSTGRES_USER:-atlaskb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in your .env}
+      POSTGRES_DB: ${POSTGRES_DB:-atlaskb}
     ports:
       # Host 15432 -> container 5432 to avoid clashing with a local Postgres.
       - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U atlaskb -d atlaskb"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-atlaskb} -d $${POSTGRES_DB:-atlaskb}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -33,12 +36,12 @@ services:
       context: .
       dockerfile: infra/docker/api.Dockerfile
     environment:
-      DATABASE_URL: postgresql+psycopg://atlaskb:atlaskb@postgres:5432/atlaskb
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atlaskb}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-atlaskb}
       REDIS_URL: redis://redis:6379/0
       LOG_LEVEL: INFO
       # Uploaded files must be readable by the worker — shared volume, same path.
       UPLOAD_DIR: /data/uploads
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in your .env}
       EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-local}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-5.1}
@@ -62,7 +65,7 @@ services:
       context: .
       dockerfile: infra/docker/workers.Dockerfile
     environment:
-      DATABASE_URL: postgresql+psycopg://atlaskb:atlaskb@postgres:5432/atlaskb
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atlaskb}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-atlaskb}
       REDIS_URL: redis://redis:6379/0
       LOG_LEVEL: INFO
       UPLOAD_DIR: /data/uploads

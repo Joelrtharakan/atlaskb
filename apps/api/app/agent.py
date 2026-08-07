@@ -22,7 +22,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app import llm
 from app.config import settings
-from app.llm import Assessment, GroundedAnswer
+from app.llm import Assessment, GroundedAnswer, TokenUsage
 from app.retrieval import RetrievedChunk
 
 RetrieveFn = Callable[[str], list[RetrievedChunk]]
@@ -36,6 +36,7 @@ class AgentResult:
     chunks: list[RetrievedChunk]
     iterations: int
     queries: list[str] = field(default_factory=list)
+    usage: TokenUsage = field(default_factory=TokenUsage)
 
 
 class _State(TypedDict):
@@ -47,6 +48,7 @@ class _State(TypedDict):
     sufficient: bool
     refined_query: str | None
     answer: GroundedAnswer | None
+    usage: TokenUsage
 
 
 def _build_graph(
@@ -82,6 +84,7 @@ def _build_graph(
             "iterations": iterations,
             "sufficient": verdict.sufficient,
             "refined_query": verdict.refined_query,
+            "usage": state["usage"] + verdict.usage,
         }
 
     def route(state: _State) -> str:
@@ -90,7 +93,8 @@ def _build_graph(
         return "plan"
 
     def generate(state: _State) -> dict:
-        return {"answer": generate_fn(state["question"], state["chunks"])}
+        answer = generate_fn(state["question"], state["chunks"])
+        return {"answer": answer, "usage": state["usage"] + answer.usage}
 
     graph = StateGraph(_State)
     graph.add_node("plan", plan)
@@ -130,6 +134,7 @@ def run_agent(
             "sufficient": False,
             "refined_query": None,
             "answer": None,
+            "usage": TokenUsage(),
         }
     )
     answer = final["answer"] or GroundedAnswer(False, llm.CANNOT_ANSWER, [])
@@ -138,4 +143,5 @@ def run_agent(
         chunks=final["chunks"],
         iterations=final["iterations"],
         queries=final["queries"],
+        usage=final["usage"],
     )

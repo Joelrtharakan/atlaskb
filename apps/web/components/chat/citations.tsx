@@ -36,10 +36,23 @@ export function numberSources(resp: ChatResponse): {
  * (the backend's claims are usually verbatim spans). Any markers we can't place
  * inline are appended at the end so no citation is ever dropped.
  */
-export function renderAnswerWithCitations(resp: ChatResponse): ReactNode {
+export interface CitationRenderOptions {
+  /** Notified with a document id on citation hover/focus, null on leave. */
+  onHoverDoc?: (documentId: string | null) => void;
+}
+
+export function renderAnswerWithCitations(
+  resp: ChatResponse,
+  opts: CitationRenderOptions = {},
+): ReactNode {
   const { order, indexOf } = numberSources(resp);
   const answer = resp.answer;
   const lower = answer.toLowerCase();
+
+  const hoverHandler = (chunk: ScoredChunk | undefined) =>
+    opts.onHoverDoc && chunk
+      ? (hovering: boolean) => opts.onHoverDoc?.(hovering ? chunk.document_id : null)
+      : undefined;
 
   type Insertion = { pos: number; indices: number[] };
   const insertions: Insertion[] = [];
@@ -71,7 +84,14 @@ export function renderAnswerWithCitations(resp: ChatResponse): ReactNode {
     nodes.push(<Fragment key={`t-${k}`}>{answer.slice(cursor, pos)}</Fragment>);
     ins.indices.forEach((i) => {
       const src = order.find((s) => s.index === i);
-      nodes.push(<CitationMarker key={`c-${k}-${i}`} index={i} chunk={src?.chunk} />);
+      nodes.push(
+        <CitationMarker
+          key={`c-${k}-${i}`}
+          index={i}
+          chunk={src?.chunk}
+          onHoverChange={hoverHandler(src?.chunk)}
+        />,
+      );
     });
     cursor = pos;
   });
@@ -83,7 +103,14 @@ export function renderAnswerWithCitations(resp: ChatResponse): ReactNode {
         {" "}
         {trailing.map((i) => {
           const src = order.find((s) => s.index === i);
-          return <CitationMarker key={`tr-${i}`} index={i} chunk={src?.chunk} />;
+          return (
+            <CitationMarker
+              key={`tr-${i}`}
+              index={i}
+              chunk={src?.chunk}
+              onHoverChange={hoverHandler(src?.chunk)}
+            />
+          );
         })}
       </Fragment>,
     );
