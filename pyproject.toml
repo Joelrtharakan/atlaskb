@@ -1,0 +1,29 @@
+# uv workspace root.
+#
+# The API and workers are separate deployable services, but they share the same
+# domain layer (SQLAlchemy models, chunking, embeddings, retrieval) which lives
+# in the `app` package under apps/api. Declaring a workspace lets the workers
+# depend on `atlaskb-api` so the ingestion task can reuse that code instead of
+# duplicating it. Locally, `uv sync` builds one shared .venv for both services.
+[project]
+name = "atlaskb-workspace"
+version = "0.0.0"
+description = "AtlasKB monorepo workspace"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = ["apps/api", "apps/workers"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+atlaskb-api = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# B008: FastAPI uses function calls (Depends/File/Query) in argument defaults by
+# design, so this rule fights the framework's core idiom.
+ignore = ["B008"]

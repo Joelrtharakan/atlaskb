@@ -1,0 +1,24 @@
+# Keep the (repo-root) build context small for the api/workers images.
+.git
+.venv
+**/.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Node / Next.js (only needed by the web image, which has its own context)
+apps/web/node_modules
+apps/web/.next
+apps/web/out
+
+# Local runtime artifacts and secrets
+var
+.env
+.env.*
+!.env.example
+eval
+docs
+infra/k8s
+infra/terraform

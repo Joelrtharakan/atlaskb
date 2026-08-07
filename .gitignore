@@ -28,10 +28,20 @@ yarn-error.log*
 .pnpm-debug.log*
 .eslintcache
 
+# ---- Playwright ----
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # ---- Env / secrets ----
 .env
 .env.*
 !.env.example
+
+# ---- Local runtime artifacts (uploads, logs, scratch) ----
+var/
+**/var/
 
 # ---- Editors / OS ----
 .DS_Store

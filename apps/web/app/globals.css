@@ -55,6 +55,26 @@
   }
 }
 
+/* Contour progress: rings ripple outward like survey contour lines. */
+@keyframes contour {
+  0%,
+  100% {
+    stroke-opacity: 0.2;
+  }
+  50% {
+    stroke-opacity: 0.9;
+  }
+}
+
+.contour-ring {
+  animation: contour 1.6s ease-in-out infinite;
+}
+
+/* The travelling beacon underline on the chat input during retrieval. */
+.survey-line {
+  animation: survey 1.1s linear infinite;
+}
+
 /* Motion is a reserved signal — honor reduced-motion everywhere. */
 @media (prefers-reduced-motion: reduce) {
   *,

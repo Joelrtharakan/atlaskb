@@ -19,12 +19,28 @@ export default function Home() {
           N ⌐
         </div>
 
-        {/* Wordmark, top-left. */}
-        <header className="relative z-10 flex items-center gap-2 p-6">
-          <span aria-hidden className="text-pewter">
-            ◈
-          </span>
-          <span className="font-mono text-sm uppercase tracking-cartouche text-ink">AtlasKB</span>
+        {/* Wordmark, top-left; auth links top-right. */}
+        <header className="relative z-10 flex items-center justify-between gap-2 p-6">
+          <div className="flex items-center gap-2">
+            <span aria-hidden className="text-pewter">
+              ◈
+            </span>
+            <span className="font-mono text-sm uppercase tracking-cartouche text-ink">AtlasKB</span>
+          </div>
+          <nav aria-label="Account" className="flex items-center gap-4 font-mono text-xs uppercase tracking-cartouche">
+            <a
+              href="/login"
+              className="text-graphite hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
+            >
+              Log in
+            </a>
+            <a
+              href="/signup"
+              className="border-b border-pewter pb-0.5 text-ink hover:text-pewter focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
+            >
+              Sign up
+            </a>
+          </nav>
         </header>
 
         {/* Cartouche — the map's title block, anchored to the left margin. */}
@@ -41,8 +57,8 @@ export default function Home() {
               places that answer you.
             </p>
             <a
-              href="/chat"
-              className="mt-8 inline-flex items-center gap-2 border-b border-pewter pb-1 font-mono text-sm uppercase tracking-cartouche text-ink transition-colors hover:text-pewter"
+              href="/documents"
+              className="mt-8 inline-flex items-center gap-2 border-b border-pewter pb-1 font-mono text-sm uppercase tracking-cartouche text-ink transition-colors hover:text-pewter focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
             >
               Enter the atlas
               <span aria-hidden>&rarr;</span>

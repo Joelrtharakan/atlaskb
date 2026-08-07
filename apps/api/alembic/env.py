@@ -1,9 +1,4 @@
-"""Alembic environment.
-
-No models are defined yet (scaffold phase), so ``target_metadata`` is ``None``.
-When models are introduced, import their ``Base.metadata`` here to enable
-autogeneration.
-"""
+"""Alembic environment."""
 
 import os
 from logging.config import fileConfig
@@ -11,18 +6,24 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+# Import models so their tables register on Base.metadata for autogenerate.
+from app.db import Base
+from app import models  # noqa: F401  (registers models on Base.metadata)
+
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Prefer the runtime DATABASE_URL when present.
-database_url = os.getenv("DATABASE_URL")
+# Prefer the runtime DATABASE_URL, then fall back to application settings
+# (which read the repo-root .env), then to the ini placeholder.
+from app.config import settings  # noqa: E402
+
+database_url = os.getenv("DATABASE_URL") or settings.database_url
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
-# No metadata yet — autogenerate is a no-op until models are added.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

@@ -1,14 +1,15 @@
 """Celery application, configured against Redis as broker.
 
-No real jobs are defined yet (scaffold phase) — see ``tasks.py`` for the single
-placeholder task used to verify the worker boots and can execute work.
+Registered tasks live in ``tasks.py``; the main job is ``atlaskb.ingest_document``
+(parse -> chunk -> embed -> write chunks) enqueued by the API on upload.
 """
 
-import os
-
+# Reuse the API's settings so the worker reads the same .env / REDIS_URL and the
+# API producer and worker consumer always agree on the broker.
+from app.config import settings
 from celery import Celery
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+REDIS_URL = settings.redis_url
 
 celery_app = Celery(
     "atlaskb",

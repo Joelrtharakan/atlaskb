@@ -29,12 +29,21 @@ services:
 
   api:
     build:
-      context: ./apps/api
-      dockerfile: ../../infra/docker/api.Dockerfile
+      # Repo root: the API + workers are one uv workspace sharing the app package.
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://atlaskb:atlaskb@postgres:5432/atlaskb
       REDIS_URL: redis://redis:6379/0
       LOG_LEVEL: INFO
+      # Uploaded files must be readable by the worker — shared volume, same path.
+      UPLOAD_DIR: /data/uploads
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-local}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-5.1}
+    volumes:
+      - uploads:/data/uploads
     ports:
       - "8000:8000"
     depends_on:
@@ -50,12 +59,19 @@ services:
 
   workers:
     build:
-      context: ./apps/workers
-      dockerfile: ../../infra/docker/workers.Dockerfile
+      context: .
+      dockerfile: infra/docker/workers.Dockerfile
     environment:
+      DATABASE_URL: postgresql+psycopg://atlaskb:atlaskb@postgres:5432/atlaskb
       REDIS_URL: redis://redis:6379/0
       LOG_LEVEL: INFO
+      UPLOAD_DIR: /data/uploads
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-local}
+    volumes:
+      - uploads:/data/uploads
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -72,3 +88,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads:
