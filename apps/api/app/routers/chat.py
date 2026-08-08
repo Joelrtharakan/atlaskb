@@ -6,10 +6,14 @@ turn to a tenant-scoped conversation.
 
 from __future__ import annotations
 
+import hashlib
+
 import openai
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import llm
 from app.agent import run_agent
 from app.cache import cache_get, cache_key, cache_set
 from app.config import settings
@@ -36,20 +40,43 @@ def _resolve_conversation(
         # 404 for another tenant's/user's conversation — never confirm it exists.
         if (
             convo is None
-            or convo.tenant_id != principal.tenant_id
+            or convo.workspace_id != principal.workspace_id
             or convo.user_id != principal.user_id
         ):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Conversation not found")
         return convo
 
     convo = Conversation(
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         user_id=principal.user_id,
         title=question[:300],
     )
     db.add(convo)
     db.flush()
     return convo
+
+
+def _load_history(db: Session, conversation_id: str) -> list[dict]:
+    """Prior turns of a conversation, oldest first, as ``{role, content}`` dicts."""
+    rows = (
+        db.execute(
+            select(Message)
+            .where(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at, Message.id)
+        )
+        .scalars()
+        .all()
+    )
+    return [{"role": m.role, "content": m.content} for m in rows]
+
+
+def _history_sig(history: list[dict]) -> str:
+    """Short digest of the conversation so far — folded into the cache key so a
+    follow-up like "has that changed?" cannot collide across conversations."""
+    if not history:
+        return "0"
+    joined = "\x1f".join(f"{m['role']}:{m['content']}" for m in history)
+    return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:16]
 
 
 @router.post("", response_model=ChatResponse)
@@ -60,10 +87,12 @@ def chat(
 ) -> ChatResponse:
     check_rate_limit(principal)
     convo = _resolve_conversation(db, principal, body.conversation_id, body.question)
+    # Prior turns (before this question) drive follow-up reference resolution.
+    history = _load_history(db, convo.id)
     db.add(
         Message(
             conversation_id=convo.id,
-            tenant_id=principal.tenant_id,
+            workspace_id=principal.workspace_id,
             role="user",
             content=body.question,
         )
@@ -71,9 +100,11 @@ def chat(
 
     key = cache_key(
         namespace="chat",
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         user_id=principal.user_id,
-        model=f"{settings.openrouter_model}:k{body.top_k}",
+        # Conversation history is part of the key: the same follow-up text means
+        # different things in different threads, so answers must not be shared.
+        model=f"{settings.llm_model}:k{body.top_k}:h{_history_sig(history)}",
         query=body.question,
     )
     cached = cache_get(key)
@@ -81,7 +112,7 @@ def chat(
         db.add(
             Message(
                 conversation_id=convo.id,
-                tenant_id=principal.tenant_id,
+                workspace_id=principal.workspace_id,
                 role="assistant",
                 content=cached["answer"],
             )
@@ -105,10 +136,31 @@ def chat(
         embedding = embed_query(query)
         return hybrid_search(db, query, embedding, principal, top_k=body.top_k)
 
+    # On a follow-up turn, bind the conversation history into the condense
+    # (query-rewrite) and generation steps; first turns keep single-turn behavior.
+    condense_fn = (lambda q: llm.condense_query(history, q)) if history else None
+    generate_fn = (
+        (lambda q, ch: llm.generate_answer(q, ch, history=history)) if history else None
+    )
+
     try:
-        result = run_agent(body.question, retrieve)
+        result = run_agent(
+            body.question, retrieve, condense_fn=condense_fn, generate_fn=generate_fn
+        )
     except RuntimeError as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc))
+    except openai.APIConnectionError as exc:
+        # Can't reach the LLM daemon (e.g. Ollama not running). Give an actionable
+        # message without leaking the client stack trace to the API caller.
+        log.warning("chat.llm_unreachable", error=str(exc))
+        if settings.llm_provider == "ollama":
+            detail = (
+                f"Ollama is unavailable at {settings.ollama_base_url}. "
+                f"Start Ollama and ensure {settings.ollama_model} is installed."
+            )
+        else:
+            detail = "LLM provider is unreachable."
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail)
     except openai.APIError as exc:
         log.warning("chat.llm_error", error=str(exc))
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"LLM provider error: {exc}")
@@ -135,7 +187,7 @@ def chat(
     db.add(
         Message(
             conversation_id=convo.id,
-            tenant_id=principal.tenant_id,
+            workspace_id=principal.workspace_id,
             role="assistant",
             content=answer,
         )
@@ -173,7 +225,7 @@ def chat(
     log.info(
         "chat.answer",
         user_id=principal.user_id,
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         answerable=payload.answerable,
         iterations=payload.iterations,
         tokens=usage.total,

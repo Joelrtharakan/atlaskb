@@ -24,7 +24,7 @@ def list_conversations(
         db.scalars(
             select(Conversation)
             .where(
-                Conversation.tenant_id == principal.tenant_id,
+                Conversation.workspace_id == principal.workspace_id,
                 Conversation.user_id == principal.user_id,
             )
             .order_by(Conversation.created_at.desc())
@@ -42,7 +42,7 @@ def get_conversation(
     # 404 (not 403) for another tenant's/user's conversation.
     if (
         convo is None
-        or convo.tenant_id != principal.tenant_id
+        or convo.workspace_id != principal.workspace_id
         or convo.user_id != principal.user_id
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Conversation not found")

@@ -3,16 +3,29 @@
 // Error copy follows the house voice: active verbs, and every message states
 // what happened and what to do next — never a generic "Something went wrong".
 
-import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "./tokens";
+import {
+  clearTokens,
+  getAccessToken,
+  getActiveWorkspace,
+  getRefreshToken,
+  setTokens,
+} from "./tokens";
 import type {
+  AccessGrant,
   Analytics,
   ChatResponse,
+  DocumentAccess,
   DocumentDetail,
   DocumentOut,
   EvalResults,
+  Invite,
+  InvitePreview,
+  Member,
+  Role,
   SearchResponse,
   TokenPair,
   UserOut,
+  Workspace,
 } from "./types";
 
 export const API_BASE = (
@@ -49,6 +62,8 @@ type RequestOptions = {
   // Map of HTTP status -> friendly message for this specific call.
   messages?: Record<number, string>;
   fallbackMessage?: string;
+  // Override the active workspace for this call (else the stored one is used).
+  workspaceId?: string;
   // Internal: prevents infinite refresh recursion.
   _retried?: boolean;
 };
@@ -60,6 +75,8 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   if (auth) {
     const token = getAccessToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
+    const ws = opts.workspaceId ?? getActiveWorkspace();
+    if (ws) headers["X-Workspace-Id"] = ws;
   }
 
   let res: Response;
@@ -207,6 +224,76 @@ export const api = {
   async evals(): Promise<EvalResults> {
     return request<EvalResults>("/admin/evals", {
       messages: { 403: "Evaluation results are available to workspace admins only." },
+    });
+  },
+
+  // --- Workspaces ---
+  async listWorkspaces(): Promise<Workspace[]> {
+    return request<Workspace[]>("/workspaces");
+  },
+
+  async createWorkspace(name: string): Promise<Workspace> {
+    return request<Workspace>("/workspaces", { method: "POST", ...jsonBody({ name }) });
+  },
+
+  async listMembers(workspaceId: string): Promise<Member[]> {
+    return request<Member[]>(`/workspaces/${workspaceId}/members`, { workspaceId });
+  },
+
+  async invite(workspaceId: string, email: string, role: Role): Promise<Invite> {
+    return request<Invite>(`/workspaces/${workspaceId}/invites`, {
+      method: "POST",
+      workspaceId,
+      ...jsonBody({ email, role }),
+      messages: {
+        403: "Only workspace admins can invite members.",
+        409: "That person is already a member of this workspace.",
+      },
+    });
+  },
+
+  async changeRole(workspaceId: string, userId: string, role: Role): Promise<Member> {
+    return request<Member>(`/workspaces/${workspaceId}/members/${userId}`, {
+      method: "PATCH",
+      workspaceId,
+      ...jsonBody({ role }),
+      messages: { 403: "Only workspace admins can change roles." },
+    });
+  },
+
+  async removeMember(workspaceId: string, userId: string): Promise<void> {
+    return request<void>(`/workspaces/${workspaceId}/members/${userId}`, {
+      method: "DELETE",
+      workspaceId,
+      messages: { 403: "Only workspace admins can remove members." },
+    });
+  },
+
+  async getInvite(token: string): Promise<InvitePreview> {
+    return request<InvitePreview>(`/invites/${token}`, { auth: false });
+  },
+
+  async acceptInvite(token: string): Promise<{ workspace_id: string; role: Role }> {
+    return request<{ workspace_id: string; role: Role }>(`/invites/${token}/accept`, {
+      method: "POST",
+      messages: {
+        403: "This invite was issued to a different email address. Log in as the invited user.",
+        404: "This invite link is not valid.",
+        409: "This invite has already been used.",
+        410: "This invite has expired. Ask an admin for a new one.",
+      },
+    });
+  },
+
+  // --- Document access ---
+  async getDocumentAccess(documentId: string): Promise<DocumentAccess> {
+    return request<DocumentAccess>(`/documents/${documentId}/access`);
+  },
+
+  async setDocumentAccess(documentId: string, grants: AccessGrant[]): Promise<DocumentAccess> {
+    return request<DocumentAccess>(`/documents/${documentId}/access`, {
+      method: "PATCH",
+      ...jsonBody({ grants }),
     });
   },
 };

@@ -39,7 +39,7 @@ def check_rate_limit(principal: Principal) -> None:
     if not settings.rate_limit_enabled:
         return
     within_user = _hit("user", principal.user_id, settings.rate_limit_user_per_min)
-    within_tenant = _hit("tenant", principal.tenant_id, settings.rate_limit_tenant_per_min)
+    within_tenant = _hit("tenant", principal.workspace_id, settings.rate_limit_tenant_per_min)
     if not (within_user and within_tenant):
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,

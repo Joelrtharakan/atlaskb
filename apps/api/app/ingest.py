@@ -52,7 +52,7 @@ def ingest_document(document_id: str) -> None:
                 db.add(
                     Chunk(
                         document_id=doc.id,
-                        tenant_id=doc.tenant_id,
+                        workspace_id=doc.workspace_id,
                         chunk_index=c.chunk_index,
                         text=c.text,
                         page_num=c.page_num,

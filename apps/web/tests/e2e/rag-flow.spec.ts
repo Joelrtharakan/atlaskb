@@ -21,7 +21,9 @@ test("signup, upload, ask, and get a cited answer", async ({ page }) => {
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: /create account/i }).click();
 
-  // Lands on the documents register.
+  // New users have no workspace yet — create one, then land on the register.
+  await page.getByLabel("Workspace name").fill("E2E Workspace");
+  await page.getByRole("button", { name: /create workspace/i }).click();
   await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
 
   // --- Upload a document ---

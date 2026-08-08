@@ -219,9 +219,13 @@ export function ChatView() {
   const hasNodes = nodes.length > 0;
 
   return (
+    // Fill the shell's content area exactly (h-full) so the page itself never
+    // scrolls — only the transcript does. h-full also gives the atlas pane a
+    // real, full-height box to fill (a flex row would otherwise collapse to the
+    // short panel's height).
     <div className="flex h-full flex-col lg:flex-row">
       {/* --- The Living Atlas (or its 2D fallback). --- */}
-      <div className="relative min-h-[38vh] flex-1 border-b border-graphite/25 lg:min-h-0 lg:border-b-0 lg:border-r">
+      <div className="relative h-[38vh] shrink-0 border-b border-graphite/25 lg:h-auto lg:flex-1 lg:border-b-0 lg:border-r">
         {docs === null ? (
           <div className="flex h-full items-center justify-center">
             <ContourProgress size={40} label="Mapping your documents" />
@@ -267,7 +271,9 @@ export function ChatView() {
       </div>
 
       {/* --- The answer panel (always fully functional). --- */}
-      <aside className="flex min-h-0 w-full flex-col lg:w-[420px]">
+      {/* flex-1 in the stacked column (takes the height below the atlas) and a
+          fixed-width column on desktop; min-h-0 lets the transcript scroll. */}
+      <aside className="flex min-h-0 w-full flex-1 flex-col lg:w-[420px] lg:flex-none">
         <div
           role="log"
           aria-label="Question and answer log"

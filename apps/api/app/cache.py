@@ -27,9 +27,9 @@ def normalize_query(query: str) -> str:
     return _WS.sub(" ", query.strip().lower())
 
 
-def cache_key(*, namespace: str, tenant_id: str, user_id: str, model: str, query: str) -> str:
+def cache_key(*, namespace: str, workspace_id: str, user_id: str, model: str, query: str) -> str:
     digest = hashlib.sha256(
-        "\x1f".join([tenant_id, user_id, model, normalize_query(query)]).encode("utf-8")
+        "\x1f".join([workspace_id, user_id, model, normalize_query(query)]).encode("utf-8")
     ).hexdigest()
     return f"{settings.cache_prefix}:{namespace}:{digest}"
 

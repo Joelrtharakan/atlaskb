@@ -23,7 +23,8 @@ dependencies = [
     "markdown-it-py>=3.0",
     # Embeddings (local, no external API required) + query embedding at search time
     "sentence-transformers>=3.3",
-    # LLM via OpenRouter (OpenAI-compatible client)
+    # LLM via an OpenAI-compatible client — serves both Ollama (local) and
+    # OpenRouter (hosted). Ollama exposes the same API under /v1.
     "openai>=1.55",
     # Agentic retrieval orchestration
     "langgraph>=0.2.60",

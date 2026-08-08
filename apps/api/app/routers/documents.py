@@ -1,4 +1,9 @@
-"""Document upload, listing, detail, and per-document ACLs (tenant-scoped)."""
+"""Document upload, listing, detail, and per-document access grants.
+
+All access is workspace-scoped and role-gated. Retrieval enforcement lives in
+``rbac.document_visible_clause`` / ``can_read_document``; this router enforces the
+same rules for direct-by-id access and for who may *manage* access.
+"""
 
 from __future__ import annotations
 
@@ -9,25 +14,34 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import audit
 from app.celery_client import enqueue_ingest
 from app.config import settings
 from app.db import get_db
 from app.deps import get_principal, require_role
 from app.logging_config import get_logger
 from app.models import (
+    GRANT_ROLE,
+    GRANT_USER,
     ROLE_EDITOR,
+    ROLES,
     Chunk,
     Document,
-    DocumentACL,
-    TenantMembership,
+    DocumentAccessGrant,
+    WorkspaceMembership,
 )
-from app.rbac import Principal, document_visible_clause
-from app.schemas import DocumentACLOut, DocumentACLUpdate, DocumentDetail, DocumentOut
+from app.rbac import Principal, can_read_document, document_visible_clause, role_at_least
+from app.schemas import (
+    AccessGrant,
+    DocumentAccessOut,
+    DocumentAccessUpdate,
+    DocumentDetail,
+    DocumentOut,
+)
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 log = get_logger(__name__)
 
-# Accepted upload types, mapped to a canonical extension.
 _ALLOWED = {
     "application/pdf": ".pdf",
     "text/markdown": ".md",
@@ -49,22 +63,19 @@ def _resolve_extension(upload: UploadFile) -> str:
     )
 
 
-def _load_visible_document(db: Session, document_id: str, principal: Principal) -> Document:
-    """Load a document the principal may read, or raise 404.
-
-    404 (not 403) for out-of-tenant or ACL-hidden documents so their existence
-    is never revealed.
-    """
+def _load_document_or_404(db: Session, document_id: str, principal: Principal) -> Document:
+    """Load a readable document, or 404 — never revealing out-of-workspace or
+    access-restricted documents (this is the direct-by-id isolation path)."""
     doc = db.get(Document, document_id)
-    if doc is None or doc.tenant_id != principal.tenant_id:
+    if doc is None or not can_read_document(db, principal, doc):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
-    if not principal.is_admin and doc.owner_id != principal.user_id:
-        acl_ids = set(
-            db.scalars(select(DocumentACL.user_id).where(DocumentACL.document_id == doc.id))
-        )
-        if acl_ids and principal.user_id not in acl_ids:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
     return doc
+
+
+def _can_manage(doc: Document, principal: Principal) -> bool:
+    return principal.is_admin or (
+        doc.owner_id == principal.user_id and role_at_least(principal.role, ROLE_EDITOR)
+    )
 
 
 @router.post("", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
@@ -76,15 +87,16 @@ def upload_document(
     ext = _resolve_extension(file)
 
     doc = Document(
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         owner_id=principal.user_id,
         filename=file.filename or f"upload{ext}",
         content_type=file.content_type or "application/octet-stream",
-        storage_path="",  # set below once we know the id
+        storage_path="",
+        source="upload",
         status="processing",
     )
     db.add(doc)
-    db.flush()  # assigns doc.id without committing
+    db.flush()
 
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -93,13 +105,17 @@ def upload_document(
         shutil.copyfileobj(file.file, out)
 
     doc.storage_path = str(dest)
+    audit.record(
+        db, workspace_id=principal.workspace_id, user_id=principal.user_id,
+        action="document.upload", target=doc.id,
+    )
     db.commit()
     db.refresh(doc)
 
     enqueue_ingest(doc.id)
     log.info(
         "documents.upload",
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         user_id=principal.user_id,
         document_id=doc.id,
     )
@@ -114,7 +130,7 @@ def list_documents(
     return list(
         db.scalars(
             select(Document)
-            .where(Document.tenant_id == principal.tenant_id, document_visible_clause(principal))
+            .where(Document.workspace_id == principal.workspace_id, document_visible_clause(principal))
             .order_by(Document.created_at.desc())
         )
     )
@@ -126,7 +142,7 @@ def get_document(
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_principal),
 ) -> DocumentDetail:
-    doc = _load_visible_document(db, document_id, principal)
+    doc = _load_document_or_404(db, document_id, principal)
     chunk_count = db.scalar(
         select(func.count()).select_from(Chunk).where(Chunk.document_id == doc.id)
     )
@@ -135,71 +151,100 @@ def get_document(
         filename=doc.filename,
         content_type=doc.content_type,
         status=doc.status,
+        source=doc.source,
         error=doc.error,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
         chunk_count=chunk_count or 0,
+        can_manage_access=_can_manage(doc, principal),
     )
 
 
-def _require_owner_or_admin(doc: Document, principal: Principal) -> None:
-    if not principal.is_admin and doc.owner_id != principal.user_id:
+def _require_manage(db: Session, document_id: str, principal: Principal) -> Document:
+    # Must be at least an editor to touch access at all...
+    if not role_at_least(principal.role, ROLE_EDITOR):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Managing document access requires the editor role."
+        )
+    doc = db.get(Document, document_id)
+    if doc is None or doc.workspace_id != principal.workspace_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
+    # ...and either own the document or be an admin.
+    if not _can_manage(doc, principal):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
-            "Only the document owner or a workspace admin can manage its access list.",
+            "Only the document's owner or a workspace admin can change its access.",
         )
+    return doc
 
 
-@router.get("/{document_id}/acl", response_model=DocumentACLOut)
-def get_document_acl(
+@router.get("/{document_id}/access", response_model=DocumentAccessOut)
+def get_document_access(
     document_id: str,
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_principal),
-) -> DocumentACLOut:
-    doc = db.get(Document, document_id)
-    if doc is None or doc.tenant_id != principal.tenant_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
-    _require_owner_or_admin(doc, principal)
-    user_ids = list(
-        db.scalars(select(DocumentACL.user_id).where(DocumentACL.document_id == doc.id))
+) -> DocumentAccessOut:
+    doc = _require_manage(db, document_id, principal)
+    grants = db.scalars(
+        select(DocumentAccessGrant).where(DocumentAccessGrant.document_id == doc.id)
+    ).all()
+    return DocumentAccessOut(
+        grants=[AccessGrant(grant_type=g.grant_type, role_or_user_id=g.role_or_user_id) for g in grants]
     )
-    return DocumentACLOut(user_ids=user_ids)
 
 
-@router.put("/{document_id}/acl", response_model=DocumentACLOut)
-def set_document_acl(
+@router.patch("/{document_id}/access", response_model=DocumentAccessOut)
+def set_document_access(
     document_id: str,
-    body: DocumentACLUpdate,
+    body: DocumentAccessUpdate,
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_principal),
-) -> DocumentACLOut:
-    doc = db.get(Document, document_id)
-    if doc is None or doc.tenant_id != principal.tenant_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
-    _require_owner_or_admin(doc, principal)
+) -> DocumentAccessOut:
+    doc = _require_manage(db, document_id, principal)
 
-    requested = set(body.user_ids)
-    if requested:
+    # Validate grants: role grants must be real roles; user grants must be members.
+    user_ids = {g.role_or_user_id for g in body.grants if g.grant_type == GRANT_USER}
+    role_values = {g.role_or_user_id for g in body.grants if g.grant_type == GRANT_ROLE}
+    bad_roles = role_values - set(ROLES)
+    if bad_roles:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"Unknown role(s): {', '.join(sorted(bad_roles))}."
+        )
+    if user_ids:
         members = set(
             db.scalars(
-                select(TenantMembership.user_id).where(
-                    TenantMembership.tenant_id == principal.tenant_id,
-                    TenantMembership.user_id.in_(requested),
+                select(WorkspaceMembership.user_id).where(
+                    WorkspaceMembership.workspace_id == principal.workspace_id,
+                    WorkspaceMembership.user_id.in_(user_ids),
                 )
             )
         )
-        missing = requested - members
+        missing = user_ids - members
         if missing:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                "Every user in the access list must be a member of this workspace. "
-                f"Not members: {', '.join(sorted(missing))}.",
+                f"These users are not members of this workspace: {', '.join(sorted(missing))}.",
             )
 
-    # Replace the allowlist wholesale.
-    db.query(DocumentACL).filter(DocumentACL.document_id == doc.id).delete()
-    for uid in requested:
-        db.add(DocumentACL(document_id=doc.id, user_id=uid))
+    # Replace all grants wholesale (dedupe on the way in).
+    db.query(DocumentAccessGrant).filter(DocumentAccessGrant.document_id == doc.id).delete()
+    seen: set[tuple[str, str]] = set()
+    for g in body.grants:
+        key = (g.grant_type, g.role_or_user_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        db.add(
+            DocumentAccessGrant(
+                document_id=doc.id, grant_type=g.grant_type, role_or_user_id=g.role_or_user_id
+            )
+        )
+    audit.record(
+        db, workspace_id=principal.workspace_id, user_id=principal.user_id,
+        action="document.access_change", target=doc.id, meta={"grants": len(seen)},
+    )
     db.commit()
-    log.info("documents.acl_set", document_id=doc.id, count=len(requested))
-    return DocumentACLOut(user_ids=sorted(requested))
+    log.info("documents.access_set", document_id=doc.id, grants=len(seen))
+    return DocumentAccessOut(
+        grants=[AccessGrant(grant_type=t, role_or_user_id=v) for t, v in sorted(seen)]
+    )

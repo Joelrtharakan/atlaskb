@@ -18,6 +18,8 @@ async function signupUploadReady(page: Page): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill("password123");
   await page.getByRole("button", { name: /create account/i }).click();
+  await page.getByLabel("Workspace name").fill("E2E Workspace");
+  await page.getByRole("button", { name: /create workspace/i }).click();
   await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
 
   await page.setInputFiles('input[type="file"]', FIXTURE);

@@ -58,15 +58,11 @@ def test_invalid_key_rejected(client):
     assert r.status_code == 401
 
 
-def test_key_role_cannot_exceed_creator_role(client, make_user):
+def test_key_role_cannot_exceed_creator_role(client, make_user, grant_membership):
     admin = make_user()
-    viewer = make_user()
-    client.post(
-        f"/workspaces/{admin.tenant_id}/invite",
-        headers=admin.headers,
-        json={"email": viewer.email, "role": "viewer"},
-    )
-    viewer_hdr = {**viewer.headers, "X-Tenant-Id": admin.tenant_id}
+    viewer = make_user(create_workspace=False)
+    grant_membership(viewer.user_id, admin.workspace_id, "viewer")
+    viewer_hdr = viewer.in_ws(admin.workspace_id)
 
     # A viewer cannot mint an admin key...
     r = client.post("/api-keys", headers=viewer_hdr, json={"name": "k", "role": "admin"})

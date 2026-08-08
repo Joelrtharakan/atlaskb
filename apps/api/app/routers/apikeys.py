@@ -45,7 +45,7 @@ def create_api_key(
 
     full_key, lookup, key_hash = generate_api_key()
     key = ApiKey(
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         user_id=principal.user_id,
         name=body.name,
         role=role,
@@ -55,7 +55,7 @@ def create_api_key(
     db.add(key)
     db.commit()
     db.refresh(key)
-    log.info("apikey.create", tenant_id=principal.tenant_id, key_id=key.id, role=role)
+    log.info("apikey.create", workspace_id=principal.workspace_id, key_id=key.id, role=role)
     return ApiKeyCreated(
         id=key.id,
         name=key.name,
@@ -73,7 +73,7 @@ def list_api_keys(
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_principal),
 ) -> list[ApiKey]:
-    stmt = select(ApiKey).where(ApiKey.tenant_id == principal.tenant_id)
+    stmt = select(ApiKey).where(ApiKey.workspace_id == principal.workspace_id)
     # Admins see all tenant keys; others see only their own.
     if not principal.is_admin:
         stmt = stmt.where(ApiKey.user_id == principal.user_id)
@@ -88,11 +88,11 @@ def revoke_api_key(
 ) -> None:
     key = db.get(ApiKey, key_id)
     # Never confirm existence of keys outside the caller's tenant.
-    if key is None or key.tenant_id != principal.tenant_id:
+    if key is None or key.workspace_id != principal.workspace_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "API key not found")
     if not principal.is_admin and key.user_id != principal.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You can only revoke your own API keys.")
     if key.revoked_at is None:
         key.revoked_at = datetime.now(UTC)
         db.commit()
-    log.info("apikey.revoke", tenant_id=principal.tenant_id, key_id=key.id)
+    log.info("apikey.revoke", workspace_id=principal.workspace_id, key_id=key.id)

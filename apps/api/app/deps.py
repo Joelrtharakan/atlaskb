@@ -1,4 +1,10 @@
-"""Shared FastAPI dependencies: user auth, tenant/role resolution, API keys."""
+"""Shared FastAPI dependencies: user auth, workspace/role resolution, API keys.
+
+Active workspace is resolved from the ``X-Workspace-Id`` header for JWT callers
+(a user may belong to several workspaces, so it must be explicit), or fixed by
+the API key for programmatic callers. This one resolver is the single place
+workspace context is established.
+"""
 
 from __future__ import annotations
 
@@ -29,7 +35,7 @@ def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(_bearer),
     db: Session = Depends(get_db),
 ) -> User:
-    """Resolve the authenticated user from a Bearer access token (no tenant)."""
+    """Resolve the authenticated user from a Bearer access token (no workspace)."""
     try:
         payload = decode_token(creds.credentials, expected_type="access")
     except jwt.PyJWTError:
@@ -55,17 +61,18 @@ def _principal_from_api_key(db: Session, presented: str) -> Principal:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or revoked API key")
     key.last_used_at = datetime.now(UTC)
     db.commit()
-    return Principal(user_id=key.user_id, tenant_id=key.tenant_id, role=key.role, auth="api_key")
+    return Principal(
+        user_id=key.user_id, workspace_id=key.workspace_id, role=key.role, auth="api_key"
+    )
 
 
 def get_principal(request: Request, db: Session = Depends(get_db)) -> Principal:
-    """Resolve the acting principal (user + tenant + role).
+    """Resolve the acting principal (user + workspace + role).
 
-    Two auth methods are accepted:
-      * ``X-API-Key: atlk_...`` — tenant and role fixed by the key.
-      * ``Authorization: Bearer <jwt>`` — tenant chosen by the optional
-        ``X-Tenant-Id`` header, defaulting to the user's personal tenant. The
-        user must be a member of the selected tenant.
+    Two auth methods:
+      * ``X-API-Key: atlk_...`` — workspace and role fixed by the key.
+      * ``Authorization: Bearer <jwt>`` + ``X-Workspace-Id`` — the user must be a
+        member of the named workspace; their role there is used.
     """
     api_key = request.headers.get("x-api-key")
     if api_key:
@@ -84,13 +91,20 @@ def get_principal(request: Request, db: Session = Depends(get_db)) -> Principal:
     if user is None:
         raise _CREDENTIALS_ERROR
 
-    tenant_id = request.headers.get("x-tenant-id") or user.tenant_id
-    membership = get_membership(db, tenant_id, user.id)
+    workspace_id = request.headers.get("x-workspace-id")
+    if not workspace_id:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Select a workspace with the X-Workspace-Id header.",
+        )
+    membership = get_membership(db, workspace_id, user.id)
     if membership is None:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You are not a member of this workspace."
         )
-    return Principal(user_id=user.id, tenant_id=tenant_id, role=membership.role, auth="jwt")
+    return Principal(
+        user_id=user.id, workspace_id=workspace_id, role=membership.role, auth="jwt"
+    )
 
 
 def require_role(minimum: str) -> Callable[..., Principal]:

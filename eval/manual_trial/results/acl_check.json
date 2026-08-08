@@ -1,0 +1,1625 @@
+{
+  "phase": "acl_check",
+  "generated_at": "2026-08-08T11:34:22.459756+00:00",
+  "config": {
+    "workspace_id": "f3d30555-e289-450f-8e49-cba368b975fe",
+    "top_k": 8
+  },
+  "records": [
+    {
+      "section": "search",
+      "id": "s_basic_pto",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "PTO carryover",
+      "expected_behavior": "handbook (carryover up to 5) and/or all-hands (5->10) ranked top 1-3 with a clear score gap",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'handbook', 'allhands'] want-any=['handbook', 'allhands'] | top score 0.0328 vs #2 0.0161",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.03279,
+            "dense": 0.3824,
+            "sparse": 0.0045,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.2291,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01587,
+            "dense": 0.1964,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01562,
+            "dense": 0.1934,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01538,
+            "dense": 0.185,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01515,
+            "dense": 0.1474,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01493,
+            "dense": 0.143,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": 0.01471,
+            "dense": 0.1324,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_basic_servo",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "servo motor shortage",
+      "expected_behavior": "falcon (open risk) and/or all-hands (resolved) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'falcon', 'falcon'] want-any=['falcon', 'allhands'] | top score 0.0328 vs #2 0.0323",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.03279,
+            "dense": 0.4747,
+            "sparse": 0.1,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.03226,
+            "dense": 0.3607,
+            "sparse": 0.0167,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01587,
+            "dense": 0.2833,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.01562,
+            "dense": 0.269,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01538,
+            "dense": 0.2398,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01515,
+            "dense": 0.2301,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": 0.01493,
+            "dense": 0.2186,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": 0.01471,
+            "dense": 0.2101,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_basic_oncall",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "on-call rotation",
+      "expected_behavior": "onboarding (on-call section) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['onboarding', 'onboarding', 'allhands'] want-any=['onboarding', 'allhands'] | top score 0.0325 vs #2 0.0315",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.03252,
+            "dense": 0.4657,
+            "sparse": 0.0067,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.03154,
+            "dense": 0.1571,
+            "sparse": 0.1175,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01613,
+            "dense": 0.2637,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01587,
+            "dense": 0.243,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": 0.01562,
+            "dense": 0.1643,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01538,
+            "dense": 0.1581,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 0.01493,
+            "dense": 0.1331,
+            "sparse": 0,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01471,
+            "dense": 0.1299,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_basic_expense",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "expense reimbursement approval",
+      "expected_behavior": "handbook (expense table) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['handbook', 'restricted', 'restricted'] want-any=['handbook'] | top score 0.0328 vs #2 0.0161",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.03279,
+            "dense": 0.3394,
+            "sparse": 0.0548,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.2719,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": 0.01587,
+            "dense": 0.2605,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": 0.01562,
+            "dense": 0.2273,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01538,
+            "dense": 0.2151,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": 0.01515,
+            "dense": 0.1612,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "restricted",
+            "page": 2,
+            "score": 0.01493,
+            "dense": 0.1598,
+            "sparse": 0,
+            "text": "3. Severance Terms VP-level and above are entitled to 6 months of base salary and 12 months of accelerated equity vesting in the event of termination without cause, contingent on s"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01471,
+            "dense": 0.1546,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_iso",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "ISO/TS 15066",
+      "expected_behavior": "precise BM25 match in falcon/all-hands top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'falcon', 'onboarding'] want-any=['falcon', 'allhands'] | top score 0.0325 vs #2 0.0289",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.03252,
+            "dense": 0.2567,
+            "sparse": 0.1,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.02889,
+            "dense": 0.0611,
+            "sparse": 0.1,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.1981,
+            "sparse": 0,
+            "text": "1. High-level service architecture: cloud platform and robot fleet. 3. Coding Standards Standard Requirement Test coverage Above 80% before merge Code review 1+ approval from a sen"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01587,
+            "dense": 0.1686,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01562,
+            "dense": 0.1574,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": 0.01538,
+            "dense": 0.1457,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01515,
+            "dense": 0.144,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01493,
+            "dense": 0.1422,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_cost",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "$8,600",
+      "expected_behavior": "all-hands (actual unit cost) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'allhands', 'restricted'] want-any=['allhands'] | top score 0.0323 vs #2 0.0318",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.03226,
+            "dense": 0.1653,
+            "sparse": 0.1333,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.03178,
+            "dense": 0.1114,
+            "sparse": 0.1333,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": 0.01639,
+            "dense": 0.1684,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": 0.01587,
+            "dense": 0.1341,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.01562,
+            "dense": 0.1311,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 0.01515,
+            "dense": 0.1069,
+            "sparse": 0,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01493,
+            "dense": 0.1048,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01471,
+            "dense": 0.0921,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_12kg",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "12 kg",
+      "expected_behavior": "falcon (v3 payload) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['falcon', 'allhands', 'restricted'] want-any=['falcon'] | top score 0.0328 vs #2 0.0161",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.03279,
+            "dense": 0.0687,
+            "sparse": 0.2,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.0614,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": 0.01587,
+            "dense": 0.0426,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01562,
+            "dense": 0.0369,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "restricted",
+            "page": 2,
+            "score": 0.01538,
+            "dense": 0.0259,
+            "sparse": 0,
+            "text": "3. Severance Terms VP-level and above are entitled to 6 months of base salary and 12 months of accelerated equity vesting in the event of termination without cause, contingent on s"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01515,
+            "dense": 0.0108,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01493,
+            "dense": 0.0074,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01471,
+            "dense": 0.006,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_nwcli",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "northwind/tap/nw-cli",
+      "expected_behavior": "onboarding (dev env setup) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['onboarding', 'allhands', 'onboarding'] want-any=['onboarding'] | top score 0.0325 vs #2 0.0164",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 0.03252,
+            "dense": 0.4857,
+            "sparse": 0.1,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01639,
+            "dense": 0.5811,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 3,
+            "score": 0.01587,
+            "dense": 0.4615,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Pag"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01562,
+            "dense": 0.4581,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": 0.01538,
+            "dense": 0.4429,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01515,
+            "dense": 0.4424,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": 0.01493,
+            "dense": 0.4394,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01471,
+            "dense": 0.3504,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_sem_timeoff",
+      "group": "Semantic/synonym",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "time off balance",
+      "expected_behavior": "should still find PTO content (handbook/all-hands) top 1-3 via dense",
+      "verdict": "pass",
+      "reason": "top3 sources=['handbook', 'handbook', 'allhands'] want-any=['handbook', 'allhands'] | top score 0.0164 vs #2 0.0161",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01639,
+            "dense": 0.2502,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": 0.01613,
+            "dense": 0.245,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01587,
+            "dense": 0.2116,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01562,
+            "dense": 0.1937,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.01538,
+            "dense": 0.1799,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01515,
+            "dense": 0.1684,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01493,
+            "dense": 0.164,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": 0.01471,
+            "dense": 0.1354,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_sem_stops",
+      "group": "Semantic/synonym",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "robot arm stops itself",
+      "expected_behavior": "falcon force-limiting collision detection top 1-3 via dense",
+      "verdict": "pass",
+      "reason": "top3 sources=['falcon', 'allhands', 'falcon'] want-any=['falcon'] | top score 0.0323 vs #2 0.0164",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.03227,
+            "dense": 0.2418,
+            "sparse": 0.0013,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01639,
+            "dense": 0.27,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01613,
+            "dense": 0.26,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": 0.01562,
+            "dense": 0.213,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01538,
+            "dense": 0.186,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01515,
+            "dense": 0.1846,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": 0.01493,
+            "dense": 0.1808,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01471,
+            "dense": 0.1718,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_sem_confidential",
+      "group": "Semantic/synonym",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "who can see confidential company data",
+      "expected_behavior": "security data classification section top 1-3 via dense",
+      "verdict": "pass",
+      "reason": "top3 sources=['security', 'security', 'restricted'] want-any=['security'] | top score 0.0164 vs #2 0.0161",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "security",
+            "page": 1,
+            "score": 0.01639,
+            "dense": 0.4071,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": 0.01613,
+            "dense": 0.3102,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": 0.01587,
+            "dense": 0.2321,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01562,
+            "dense": 0.222,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": 0.01538,
+            "dense": 0.2193,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": 0.01515,
+            "dense": 0.2092,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": 0.01493,
+            "dense": 0.1163,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01471,
+            "dense": 0.1116,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_typo_servo",
+      "group": "Typo tolerance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "servo moter shortage",
+      "expected_behavior": "still find servo shortage content despite typo",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'falcon', 'falcon'] want-any=['falcon', 'allhands'] | top score 0.0164 vs #2 0.0161",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01639,
+            "dense": 0.4304,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.01613,
+            "dense": 0.3477,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.01587,
+            "dense": 0.2944,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01562,
+            "dense": 0.2737,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01538,
+            "dense": 0.2571,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01515,
+            "dense": 0.2359,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01493,
+            "dense": 0.2336,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01471,
+            "dense": 0.233,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_typo_falcon",
+      "group": "Typo tolerance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "falcon arm saftey features",
+      "expected_behavior": "still find falcon safety content despite typo",
+      "verdict": "pass",
+      "reason": "top3 sources=['falcon', 'falcon', 'allhands'] want-any=['falcon'] | top score 0.0164 vs #2 0.0161",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": 0.01639,
+            "dense": 0.5583,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.5219,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": 0.01587,
+            "dense": 0.373,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.01562,
+            "dense": 0.3484,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 0.01538,
+            "dense": 0.3104,
+            "sparse": 0,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01515,
+            "dense": 0.3061,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "onboarding",
+            "page": 3,
+            "score": 0.01493,
+            "dense": 0.2947,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Pag"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01471,
+            "dense": 0.2941,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_amb_access",
+      "group": "Ambiguous/multi-doc",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "access",
+      "expected_behavior": "multiple genuinely relevant chunks from different docs (security, onboarding)",
+      "verdict": "pass",
+      "reason": "distinct sources=['security', 'onboarding', 'allhands', 'restricted']",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "security",
+            "page": 1,
+            "score": 0.03279,
+            "dense": 0.4636,
+            "sparse": 0.8,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.03226,
+            "dense": 0.3106,
+            "sparse": 0.4,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.03101,
+            "dense": 0.1612,
+            "sparse": 0.1,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": 0.02988,
+            "dense": 0.1392,
+            "sparse": 0.1,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 0.02869,
+            "dense": 0.0477,
+            "sparse": 0.1,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": 0.01587,
+            "dense": 0.2269,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": 0.01562,
+            "dense": 0.225,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": 0.01515,
+            "dense": 0.1577,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_amb_gateway",
+      "group": "Ambiguous/multi-doc",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "device-gateway",
+      "expected_behavior": "relevant chunks from onboarding/falcon/all-hands",
+      "verdict": "pass",
+      "reason": "distinct sources=['onboarding', 'allhands', 'falcon', 'security']",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 0.03202,
+            "dense": 0.2475,
+            "sparse": 0.1,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.03178,
+            "dense": 0.3454,
+            "sparse": 0.1,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.03175,
+            "dense": 0.2687,
+            "sparse": 0.1,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.03175,
+            "dense": 0.2535,
+            "sparse": 0.1,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.03151,
+            "dense": 0.1967,
+            "sparse": 0.1,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": 0.01515,
+            "dense": 0.1645,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": 0.01493,
+            "dense": 0.128,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 3,
+            "score": 0.01471,
+            "dense": 0.1261,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Pag"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_absent_battery",
+      "group": "Deliberately absent",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "battery life",
+      "expected_behavior": "empty or clearly low relevance, not a forced high-confidence match",
+      "verdict": "pass",
+      "reason": "max dense_score=0.1626 (thr 0.55), top src=security",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "security",
+            "page": 2,
+            "score": 0.01639,
+            "dense": 0.1626,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.1504,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.01587,
+            "dense": 0.1498,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01562,
+            "dense": 0.1447,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01538,
+            "dense": 0.1386,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01515,
+            "dense": 0.1266,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01493,
+            "dense": 0.1233,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.01471,
+            "dense": 0.1217,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_absent_refund",
+      "group": "Deliberately absent",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "customer refund policy",
+      "expected_behavior": "empty or clearly low relevance, not a forced high-confidence match",
+      "verdict": "pass",
+      "reason": "max dense_score=0.1735 (thr 0.55), top src=security",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "security",
+            "page": 2,
+            "score": 0.01639,
+            "dense": 0.1735,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.1724,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": 0.01587,
+            "dense": 0.1714,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": 0.01562,
+            "dense": 0.1593,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": 0.01538,
+            "dense": 0.1499,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01515,
+            "dense": 0.1445,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": 0.01493,
+            "dense": 0.1114,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": 0.01471,
+            "dense": 0.0973,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_acl_salary",
+      "group": "ACL enforcement in raw search",
+      "layer": "access_control",
+      "role": "viewer",
+      "query": "salary bands",
+      "expected_behavior": "zero results from the restricted document at any score",
+      "verdict": "pass",
+      "reason": "restricted excluded (sources=['handbook', 'onboarding', 'allhands', 'security'])",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": 0.01639,
+            "dense": 0.1187,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01613,
+            "dense": 0.1183,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01587,
+            "dense": 0.093,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01562,
+            "dense": 0.0724,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01538,
+            "dense": 0.0684,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": 0.01515,
+            "dense": 0.0594,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": 0.01493,
+            "dense": 0.0468,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01471,
+            "dense": 0.0442,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_acl_severance",
+      "group": "ACL enforcement in raw search",
+      "layer": "access_control",
+      "role": "viewer",
+      "query": "severance terms",
+      "expected_behavior": "zero results from the restricted document at any score",
+      "verdict": "pass",
+      "reason": "restricted excluded (sources=['handbook', 'allhands', 'security', 'onboarding'])",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": 0.01639,
+            "dense": 0.1988,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 0.01613,
+            "dense": 0.1936,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": 0.01587,
+            "dense": 0.1913,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01562,
+            "dense": 0.1756,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": 0.01538,
+            "dense": 0.1701,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 0.01515,
+            "dense": 0.1698,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          },
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": 0.01493,
+            "dense": 0.1695,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 0.01471,
+            "dense": 0.1572,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          }
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "overall": {
+      "pass": 19,
+      "partial": 0,
+      "fail": 0,
+      "manual": 0,
+      "blocked": 0
+    },
+    "by_layer": {
+      "retrieval": {
+        "pass": 17,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "access_control": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      }
+    },
+    "by_group": {
+      "Basic relevance": {
+        "pass": 4,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Exact-token": {
+        "pass": 4,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Semantic/synonym": {
+        "pass": 3,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Typo tolerance": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Ambiguous/multi-doc": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Deliberately absent": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "ACL enforcement in raw search": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      }
+    }
+  }
+}

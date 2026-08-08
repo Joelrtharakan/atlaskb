@@ -45,13 +45,17 @@ def test_signup_login_refresh_and_protection(client):
 
     # Protected endpoint requires a token.
     assert client.get("/documents").status_code in (401, 403)
-    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
-    assert client.get("/documents", headers=headers).status_code == 200
+    bearer = {"Authorization": f"Bearer {tokens['access_token']}"}
+    # A fresh user has no workspace yet → workspace-scoped calls 400 until they create one.
+    assert client.get("/documents", headers=bearer).status_code == 400
+    ws_id = client.post("/workspaces", headers=bearer, json={"name": "WS"}).json()["id"]
+    scoped = {**bearer, "X-Workspace-Id": ws_id}
+    assert client.get("/documents", headers=scoped).status_code == 200
 
     refreshed = client.post(
         "/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
     ).json()
-    h2 = {"Authorization": f"Bearer {refreshed['access_token']}"}
+    h2 = {"Authorization": f"Bearer {refreshed['access_token']}", "X-Workspace-Id": ws_id}
     assert client.get("/documents", headers=h2).status_code == 200
 
 

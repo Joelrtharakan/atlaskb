@@ -7,6 +7,12 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
 
+if not settings.database_url:
+    raise RuntimeError(
+        "DATABASE_URL is not set. Copy .env.example to .env at the repo root and fill it in "
+        "(see README). If your .env is elsewhere, export DATABASE_URL before starting."
+    )
+
 engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)

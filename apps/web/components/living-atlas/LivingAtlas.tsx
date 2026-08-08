@@ -4,12 +4,10 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { AtlasGlobe } from "./AtlasGlobe";
 import { generativeAtlas, type AtlasEdge, type AtlasNode } from "./layout";
 
 // Design tokens (kept in sync with tailwind.config.ts / the Phase 1 plan).
-const INK = "#16232B";
-const GRAPHITE = "#515C63";
-const BEACON = "#E8A22B"; // RESERVED: retrieval active / citations
 const MERIDIAN = "#22B2A6"; // verdigris accent — ambient threads + node glow
 
 const CENTER = new THREE.Vector3(0, 0, 0);
@@ -30,49 +28,106 @@ export interface LivingAtlasProps {
   /** When true, frame the active cluster; when false, ease back to ambient. */
   focus?: boolean;
   reducedMotion?: boolean;
+  /** World-space X offset for the whole field (ambient landing shifts it right). */
+  offsetX?: number;
 }
 
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
-
-/** Instanced document nodes: solid cores + a soft coloured halo (the "glow"). */
+/** Instanced document nodes: solid cores + two soft halo layers (a bloom-like
+ * glow). Optionally drift organically (each node bobs on its own phase) and
+ * twinkle. */
 function Nodes({
   nodes,
   coreColor,
   haloColor,
   haloOpacity,
+  twinkle = false,
+  drift = false,
+  reducedMotion = false,
 }: {
   nodes: AtlasNode[];
   coreColor: string;
   haloColor: string;
   haloOpacity: number;
+  twinkle?: boolean;
+  drift?: boolean;
+  reducedMotion?: boolean;
 }) {
   const cores = useRef<THREE.InstancedMesh>(null);
   const halos = useRef<THREE.InstancedMesh>(null);
+  const glow = useRef<THREE.InstancedMesh>(null);
+  const haloMat = useRef<THREE.MeshBasicMaterial>(null);
+  const glowMat = useRef<THREE.MeshBasicMaterial>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  useLayoutEffect(() => {
-    const dummy = new THREE.Object3D();
+  // Per-node motion parameters, seeded deterministically from the index.
+  const motion = useMemo(
+    () =>
+      nodes.map((_, i) => {
+        const seed = i * 127.1 + 0.5;
+        return {
+          phase: (Math.sin(seed) * 43758.5453) % (Math.PI * 2),
+          speed: 0.35 + Math.abs(Math.cos(seed * 1.7)) * 0.4,
+          ampY: 0.06 + Math.abs(Math.sin(seed)) * 0.06,
+          ampX: 0.04 + Math.abs(Math.cos(seed)) * 0.04,
+        };
+      }),
+    [nodes],
+  );
+
+  const writeMatrices = (time: number) => {
     nodes.forEach((node, i) => {
-      dummy.position.set(...node.position);
+      const m = motion[i];
+      const active = drift && !reducedMotion;
+      const dx = active ? Math.cos(time * m.speed * 0.7 + m.phase) * m.ampX : 0;
+      const dy = active ? Math.sin(time * m.speed + m.phase) * m.ampY : 0;
+      dummy.position.set(node.position[0] + dx, node.position[1] + dy, node.position[2]);
       dummy.scale.setScalar(node.scale);
       dummy.updateMatrix();
       cores.current?.setMatrixAt(i, dummy.matrix);
-      dummy.scale.setScalar(node.scale * 2.6);
+      dummy.scale.setScalar(node.scale * 1.9);
       dummy.updateMatrix();
       halos.current?.setMatrixAt(i, dummy.matrix);
+      dummy.scale.setScalar(node.scale * 3.2);
+      dummy.updateMatrix();
+      glow.current?.setMatrixAt(i, dummy.matrix);
     });
-    if (cores.current) cores.current.instanceMatrix.needsUpdate = true;
-    if (halos.current) halos.current.instanceMatrix.needsUpdate = true;
+    for (const mesh of [cores, halos, glow]) {
+      if (mesh.current) mesh.current.instanceMatrix.needsUpdate = true;
+    }
+  };
+
+  useLayoutEffect(() => {
+    writeMatrices(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes]);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (drift && !reducedMotion) writeMatrices(t);
+    if (twinkle && !reducedMotion && haloMat.current && glowMat.current) {
+      haloMat.current.opacity = haloOpacity * (0.85 + 0.15 * Math.sin(t * 0.9));
+      glowMat.current.opacity = haloOpacity * 0.22 * (0.7 + 0.3 * Math.sin(t * 0.9 + 1.5));
+    }
+  });
 
   if (nodes.length === 0) return null;
 
   return (
     <group>
-      <instancedMesh ref={halos} args={[undefined, undefined, nodes.length]}>
-        <sphereGeometry args={[1, 10, 10]} />
+      <instancedMesh ref={glow} args={[undefined, undefined, nodes.length]}>
+        <sphereGeometry args={[1, 8, 8]} />
         <meshBasicMaterial
+          ref={glowMat}
+          color={haloColor}
+          transparent
+          opacity={haloOpacity * 0.22}
+          depthWrite={false}
+        />
+      </instancedMesh>
+      <instancedMesh ref={halos} args={[undefined, undefined, nodes.length]}>
+        <sphereGeometry args={[1, 12, 12]} />
+        <meshBasicMaterial
+          ref={haloMat}
           color={haloColor}
           transparent
           opacity={haloOpacity}
@@ -117,169 +172,71 @@ function LatentThreads({
   );
 }
 
-/** Beacon overlays for retrieved / cited / hovered nodes. */
-function Highlights({
-  positions,
-  citedPositions,
-  highlightedPosition,
-  reducedMotion,
+/**
+ * The signature ambient motion: luminous "signal" pulses that travel along the
+ * threads from node to node, fading in as they leave and out as they arrive —
+ * the knowledge map quietly routing between related places. Each pulse re-homes
+ * to a fresh random edge when it lands, so routes keep lighting up across the
+ * field. (Ambient only; rendered nowhere when reduced motion is set.)
+ */
+function SignalPulses({
+  nodes,
+  edges,
+  count = 10,
 }: {
-  positions: THREE.Vector3[];
-  citedPositions: Set<number>;
-  highlightedPosition: THREE.Vector3 | null;
-  reducedMotion: boolean;
+  nodes: AtlasNode[];
+  edges: AtlasEdge[];
+  count: number;
 }) {
-  const group = useRef<THREE.Group>(null);
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const a = useMemo(() => new THREE.Vector3(), []);
+  const b = useMemo(() => new THREE.Vector3(), []);
+  const p = useMemo(() => new THREE.Vector3(), []);
 
-  useFrame((state) => {
-    if (!group.current) return;
-    const pulse = reducedMotion ? 1 : 1 + Math.sin(state.clock.elapsedTime * 3) * 0.12;
-    group.current.children.forEach((child) => child.scale.setScalar(pulse));
-  });
-
-  return (
-    <group ref={group}>
-      {positions.map((p, i) => (
-        <mesh key={i} position={p}>
-          <sphereGeometry args={[citedPositions.has(i) ? 0.34 : 0.24, 16, 16]} />
-          <meshBasicMaterial color={BEACON} transparent opacity={citedPositions.has(i) ? 0.95 : 0.7} />
-        </mesh>
-      ))}
-      {highlightedPosition ? (
-        <mesh position={highlightedPosition}>
-          <sphereGeometry args={[0.5, 18, 18]} />
-          <meshBasicMaterial color={BEACON} transparent opacity={0.35} depthWrite={false} />
-        </mesh>
-      ) : null}
-    </group>
+  const pulses = useRef(
+    Array.from({ length: count }, () => ({
+      edge: Math.floor(Math.random() * Math.max(1, edges.length)),
+      t: Math.random(),
+      speed: 0.18 + Math.random() * 0.28,
+    })),
   );
-}
-
-/** Amber threads drawn progressively from each active node to the answer point. */
-function AnswerThreads({
-  positions,
-  focus,
-  reducedMotion,
-}: {
-  positions: THREE.Vector3[];
-  focus: boolean;
-  reducedMotion: boolean;
-}) {
-  const geo = useRef<THREE.BufferGeometry>(null);
-  const mat = useRef<THREE.LineBasicMaterial>(null);
-  const progress = useRef<number[]>([]);
-  const array = useRef<Float32Array>(new Float32Array(0));
-  const end = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((_, delta) => {
-    const n = positions.length;
-    if (progress.current.length !== n) {
-      progress.current = new Array(n).fill(reducedMotion ? 1 : 0);
-      array.current = new Float32Array(n * 6);
+    if (!mesh.current || edges.length === 0) return;
+    for (let i = 0; i < count; i++) {
+      const pulse = pulses.current[i];
+      pulse.t += pulse.speed * delta;
+      if (pulse.t >= 1 || pulse.edge >= edges.length) {
+        pulse.edge = Math.floor(Math.random() * edges.length);
+        pulse.t = 0;
+        pulse.speed = 0.18 + Math.random() * 0.28;
+      }
+      const e = edges[pulse.edge];
+      a.set(...nodes[e.a].position);
+      b.set(...nodes[e.b].position);
+      const eased = pulse.t * pulse.t * (3 - 2 * pulse.t); // smoothstep
+      p.copy(a).lerp(b, eased);
+      // Emit → travel → absorb: grow toward the middle of the run, shrink at ends.
+      const envelope = Math.sin(pulse.t * Math.PI);
+      dummy.position.copy(p);
+      dummy.scale.setScalar(0.04 + envelope * 0.14);
+      dummy.updateMatrix();
+      mesh.current.setMatrixAt(i, dummy.matrix);
     }
-    if (n === 0) {
-      if (mat.current) mat.current.opacity = 0;
-      return;
-    }
-    const target = focus ? 1 : 0;
-    let maxP = 0;
-    for (let i = 0; i < n; i++) {
-      let p = progress.current[i];
-      // Ease toward the target; slightly staggered so threads draw in sequence.
-      const rate = focus ? 3.0 + i * 0.15 : 4.5;
-      p = reducedMotion ? target : p + (target - p) * Math.min(1, delta * rate);
-      progress.current[i] = p;
-      maxP = Math.max(maxP, p);
-      const start = positions[i];
-      end.copy(start).lerp(CENTER, easeOutCubic(p));
-      array.current.set(
-        [start.x, start.y, start.z, end.x, end.y, end.z],
-        i * 6,
-      );
-    }
-    if (geo.current) {
-      geo.current.setAttribute("position", new THREE.BufferAttribute(array.current, 3));
-      geo.current.attributes.position.needsUpdate = true;
-      geo.current.setDrawRange(0, n * 2);
-    }
-    if (mat.current) mat.current.opacity = 0.9 * maxP;
+    mesh.current.instanceMatrix.needsUpdate = true;
   });
 
-  if (positions.length === 0) return null;
-
   return (
-    <lineSegments>
-      <bufferGeometry ref={geo} />
-      <lineBasicMaterial ref={mat} color={BEACON} transparent opacity={0} depthWrite={false} linewidth={2} />
-    </lineSegments>
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 12, 12]} />
+      <meshBasicMaterial color={MERIDIAN} transparent opacity={0.95} depthWrite={false} />
+    </instancedMesh>
   );
 }
 
-/** The central "answer" point — lights while an active retrieval is framed. */
-function AnswerPoint({ visible, reducedMotion }: { visible: boolean; reducedMotion: boolean }) {
-  const ref = useRef<THREE.Mesh>(null);
-  const mat = useRef<THREE.MeshBasicMaterial>(null);
-  useFrame((state, delta) => {
-    if (!ref.current || !mat.current) return;
-    const targetOpacity = visible ? 0.95 : 0;
-    mat.current.opacity += (targetOpacity - mat.current.opacity) * Math.min(1, delta * 4);
-    const pulse = reducedMotion ? 1 : 1 + Math.sin(state.clock.elapsedTime * 2.5) * 0.15;
-    ref.current.scale.setScalar(pulse);
-  });
-  return (
-    <mesh ref={ref} position={[0, 0, 0]}>
-      <sphereGeometry args={[0.28, 18, 18]} />
-      <meshBasicMaterial ref={mat} color={BEACON} transparent opacity={0} />
-    </mesh>
-  );
-}
-
-/** Slow idle orbit that eases to frame the active cluster, then settles back. */
-function CameraRig({
-  activePositions,
-  focus,
-  reducedMotion,
-}: {
-  activePositions: THREE.Vector3[];
-  focus: boolean;
-  reducedMotion: boolean;
-}) {
-  const { camera } = useThree();
-  const angle = useRef(0);
-  const lookAt = useRef(new THREE.Vector3(0, 0, 0));
-  const desired = useRef(new THREE.Vector3(0, 0, 14));
-
-  const centroid = useMemo(() => {
-    const c = new THREE.Vector3();
-    if (activePositions.length === 0) return c;
-    activePositions.forEach((p) => c.add(p));
-    return c.multiplyScalar(1 / activePositions.length);
-  }, [activePositions]);
-
-  useFrame((_, delta) => {
-    const posK = reducedMotion ? 1 : Math.min(1, delta * 1.6);
-    const lookK = reducedMotion ? 1 : Math.min(1, delta * 2.2);
-    if (!reducedMotion) angle.current += delta * 0.05; // gentle idle orbit
-
-    if (focus && activePositions.length > 0) {
-      // Pull the camera toward the lit cluster, offset so threads to the centre
-      // stay in frame.
-      desired.current.copy(centroid).multiplyScalar(0.55).add(new THREE.Vector3(0, 1.2, 9));
-      lookAt.current.lerp(centroid.clone().multiplyScalar(0.5), lookK);
-    } else {
-      const r = 14;
-      const a = reducedMotion ? 0.6 : angle.current;
-      desired.current.set(Math.sin(a) * r, 2, Math.cos(a) * r);
-      lookAt.current.lerp(CENTER, lookK);
-    }
-    camera.position.lerp(desired.current, posK);
-    camera.lookAt(lookAt.current);
-  });
-
-  return null;
-}
-
-/** Ambient rotation for the landing page. Frozen when reduced motion is set. */
+/** Ambient rotation for the landing page. Frozen when reduced motion is set.
+ * Keeps the camera locked on the origin so the (recentred) field stays centered. */
 function AmbientRotation({
   groupRef,
   reducedMotion,
@@ -287,12 +244,15 @@ function AmbientRotation({
   groupRef: React.RefObject<THREE.Group>;
   reducedMotion: boolean;
 }) {
+  const { camera } = useThree();
   useFrame((state, delta) => {
+    camera.lookAt(CENTER);
     if (reducedMotion || !groupRef.current) return;
-    groupRef.current.rotation.y += delta * 0.03; // ~1 rev / 3.5 min
+    // Very slow drift — the traveling signal pulses carry the motion now.
+    groupRef.current.rotation.y += delta * 0.02; // ~1 rev / 5 min
     const t = state.clock.elapsedTime;
-    groupRef.current.rotation.x = Math.sin(t * 0.08) * 0.06;
-    groupRef.current.position.y = Math.sin(t * 0.12) * 0.15;
+    // Gentle wobble only — no translation, so the cloud never drifts off-centre.
+    groupRef.current.rotation.x = 0.1 + Math.sin(t * 0.08) * 0.04;
   });
   return null;
 }
@@ -305,91 +265,58 @@ function Scene({
   highlightedId,
   focus,
   reducedMotion,
+  offsetX,
 }: Required<Omit<LivingAtlasProps, "nodes" | "edges">> & {
   data: { nodes: AtlasNode[]; edges: AtlasEdge[] };
 }) {
   const group = useRef<THREE.Group>(null);
 
   // A composed static pose so the frozen (reduced-motion) frame reads well.
+  // Small tilt only. Ambient shifts the whole field to the right (offsetX) so
+  // the cartouche on the left sits over clean paper.
   useLayoutEffect(() => {
     if (mode === "ambient" && group.current) {
-      group.current.rotation.set(0.15, 0.6, 0);
+      group.current.rotation.set(0.12, 0.3, 0);
+      group.current.position.x = offsetX;
     }
-  }, [mode]);
-
-  const indexById = useMemo(() => {
-    const m = new Map<string, number>();
-    data.nodes.forEach((n, i) => m.set(n.id, i));
-    return m;
-  }, [data.nodes]);
-
-  const toVec = (id: string): THREE.Vector3 | null => {
-    const i = indexById.get(id);
-    return i == null ? null : new THREE.Vector3(...data.nodes[i].position);
-  };
-
-  const activePositions = useMemo(
-    () => activeIds.map(toVec).filter((v): v is THREE.Vector3 => v !== null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeIds, data.nodes],
-  );
-  const citedSet = useMemo(() => {
-    const s = new Set<number>();
-    activeIds.forEach((id, i) => {
-      if (citedIds.includes(id)) s.add(i);
-    });
-    return s;
-  }, [activeIds, citedIds]);
-  const highlightedPosition = highlightedId ? toVec(highlightedId) : null;
+  }, [mode, offsetX]);
 
   const isFunctional = mode === "functional";
 
+  // Functional (chat): a slowly rotating wireframe globe of the tenant's
+  // documents, with a beacon route lighting up on retrieval.
+  if (isFunctional) {
+    return (
+      <AtlasGlobe
+        nodes={data.nodes}
+        activeIds={activeIds}
+        citedIds={citedIds}
+        highlightedId={highlightedId}
+        focus={focus}
+        reducedMotion={reducedMotion}
+      />
+    );
+  }
+
+  // Ambient (landing): a drifting verdigris constellation with signal pulses.
   return (
     <>
-      {isFunctional ? (
-        <CameraRig
-          activePositions={activePositions}
-          focus={focus}
-          reducedMotion={reducedMotion}
-        />
-      ) : (
-        <AmbientRotation groupRef={group} reducedMotion={reducedMotion} />
-      )}
-
+      <AmbientRotation groupRef={group} reducedMotion={reducedMotion} />
       <group ref={group}>
-        <LatentThreads
-          nodes={data.nodes}
-          edges={data.edges}
-          color={isFunctional ? GRAPHITE : MERIDIAN}
-          opacity={isFunctional ? 0.18 : 0.24}
-        />
+        <LatentThreads nodes={data.nodes} edges={data.edges} color={MERIDIAN} opacity={0.2} />
         <Nodes
           nodes={data.nodes}
-          coreColor={isFunctional ? INK : MERIDIAN}
+          coreColor={MERIDIAN}
           haloColor={MERIDIAN}
-          haloOpacity={isFunctional ? 0.16 : 0.3}
+          haloOpacity={0.32}
+          twinkle
+          drift
+          reducedMotion={reducedMotion}
         />
+        {!reducedMotion && data.edges.length > 0 && (
+          <SignalPulses nodes={data.nodes} edges={data.edges} count={10} />
+        )}
       </group>
-
-      {isFunctional && (
-        <>
-          <AnswerThreads
-            positions={activePositions}
-            focus={focus}
-            reducedMotion={reducedMotion}
-          />
-          <AnswerPoint
-            visible={focus && activePositions.length > 0}
-            reducedMotion={reducedMotion}
-          />
-          <Highlights
-            positions={activePositions}
-            citedPositions={citedSet}
-            highlightedPosition={highlightedPosition}
-            reducedMotion={reducedMotion}
-          />
-        </>
-      )}
     </>
   );
 }
@@ -408,6 +335,7 @@ export default function LivingAtlas({
   highlightedId = null,
   focus = false,
   reducedMotion = false,
+  offsetX = 0,
 }: LivingAtlasProps) {
   const data = useMemo(() => {
     if (nodes && edges) return { nodes, edges };
@@ -430,6 +358,7 @@ export default function LivingAtlas({
         highlightedId={highlightedId}
         focus={focus}
         reducedMotion={reducedMotion}
+        offsetX={offsetX}
       />
     </Canvas>
   );

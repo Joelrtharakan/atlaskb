@@ -19,6 +19,7 @@ export type DocumentOut = {
   filename: string;
   content_type: string;
   status: DocumentStatus;
+  source?: string | null;
   error: string | null;
   created_at: string;
   updated_at: string;
@@ -26,6 +27,51 @@ export type DocumentOut = {
 
 export type DocumentDetail = DocumentOut & {
   chunk_count: number;
+  can_manage_access: boolean;
+};
+
+export type Role = "viewer" | "editor" | "admin";
+
+export type Workspace = {
+  id: string;
+  name: string;
+  role: Role;
+  created_at: string;
+};
+
+export type Member = {
+  user_id: string;
+  email: string;
+  role: Role;
+  joined_at: string;
+};
+
+export type Invite = {
+  id: string;
+  workspace_id: string;
+  email: string;
+  role: Role;
+  token: string;
+  invite_url: string;
+  expires_at: string;
+  accepted_at: string | null;
+};
+
+export type InvitePreview = {
+  status: "valid" | "expired" | "accepted" | "invalid";
+  email: string | null;
+  role: Role | null;
+  workspace_id: string | null;
+  workspace_name: string | null;
+};
+
+export type AccessGrant = {
+  grant_type: "role" | "user";
+  role_or_user_id: string;
+};
+
+export type DocumentAccess = {
+  grants: AccessGrant[];
 };
 
 export type ScoredChunk = {

@@ -31,17 +31,11 @@ def test_analytics_reports_real_tenant_counts(client, make_user, ingest_inline, 
     assert sum(d["count"] for d in data["questions_last_7_days"]) == 1
 
 
-def test_analytics_requires_admin(client, make_user):
+def test_analytics_requires_admin(client, make_user, grant_membership):
     admin = make_user()
-    viewer = make_user()
-    client.post(
-        f"/workspaces/{admin.tenant_id}/invite",
-        headers=admin.headers,
-        json={"email": viewer.email, "role": "viewer"},
-    )
-    r = client.get(
-        "/admin/analytics", headers={**viewer.headers, "X-Tenant-Id": admin.tenant_id}
-    )
+    viewer = make_user(create_workspace=False)
+    grant_membership(viewer.user_id, admin.workspace_id, "viewer")
+    r = client.get("/admin/analytics", headers=viewer.in_ws(admin.workspace_id))
     assert r.status_code == 403
 
 

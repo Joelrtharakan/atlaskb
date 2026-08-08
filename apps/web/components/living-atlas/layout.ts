@@ -51,6 +51,7 @@ function fibonacciPositions(
   count: number,
   rand: () => number,
   radius: number,
+  flatten = 0.7,
 ): [number, number, number][] {
   const golden = Math.PI * (3 - Math.sqrt(5));
   const out: [number, number, number][] = [];
@@ -58,13 +59,25 @@ function fibonacciPositions(
     const y = count === 1 ? 0 : 1 - (i / (count - 1)) * 2; // 1 → -1
     const r = Math.sqrt(Math.max(0, 1 - y * y));
     const theta = golden * i;
-    const jitter = () => (rand() - 0.5) * 0.35;
-    const x = (Math.cos(theta) * r + jitter()) * radius;
-    const yy = (y + jitter()) * radius;
-    const z = (Math.sin(theta) * r + jitter()) * radius * 0.55;
+    // Distribute through a spherical *volume* (cube-root keeps it uniform) so the
+    // field reads as a constellation with depth rather than a hollow shell.
+    const shell = 0.45 + 0.55 * Math.cbrt(rand());
+    const jitter = () => (rand() - 0.5) * 0.14;
+    const x = (Math.cos(theta) * r * shell + jitter()) * radius;
+    const yy = (y * shell + jitter()) * radius;
+    const z = (Math.sin(theta) * r * shell + jitter()) * radius * flatten;
     out.push([x, yy, z]);
   }
-  return out;
+
+  // Recenter on the true centroid so the cloud is symmetric about the origin —
+  // this keeps it centered in the viewport under rotation and keeps the
+  // functional camera framing accurate.
+  const n = out.length || 1;
+  const mean = out.reduce(
+    (m, [px, py, pz]) => [m[0] + px / n, m[1] + py / n, m[2] + pz / n],
+    [0, 0, 0],
+  );
+  return out.map(([px, py, pz]) => [px - mean[0], py - mean[1], pz - mean[2]]);
 }
 
 /** Connect each node to its ``k`` nearest neighbours; dedupe undirected edges. */
@@ -92,18 +105,23 @@ function nearestEdges(positions: [number, number, number][], k = 2): AtlasEdge[]
 
 /** Generative ambient field for the landing page (no real data). */
 export function generativeAtlas(
-  count = 64,
+  count = 84,
   seed = 20260807,
-  radius = 5,
+  radius = 4.4,
 ): { nodes: AtlasNode[]; edges: AtlasEdge[] } {
   const rand = mulberry32(seed);
-  const positions = fibonacciPositions(count, rand, radius);
-  const nodes: AtlasNode[] = positions.map((position, i) => ({
-    id: `ambient-${i}`,
-    title: "",
-    position,
-    scale: 0.06 + rand() * 0.12,
-  }));
+  const positions = fibonacciPositions(count, rand, radius, 0.72);
+  const nodes: AtlasNode[] = positions.map((position, i) => {
+    // Size nodes by depth (nearer = larger) for a parallax, three-dimensional feel.
+    const depth = (position[2] / (radius * 0.72) + 1) / 2; // 0 (far) → 1 (near)
+    return {
+      id: `ambient-${i}`,
+      title: "",
+      position,
+      scale: 0.05 + depth * 0.1 + rand() * 0.025,
+    };
+  });
+  // Two nearest-neighbour links per node give the pulses a richer route network.
   return { nodes, edges: nearestEdges(positions, 2) };
 }
 
@@ -120,7 +138,7 @@ export interface DocumentLike {
  */
 export function layoutFromDocuments(
   docs: DocumentLike[],
-  radius = 5,
+  radius = 4.2,
 ): { nodes: AtlasNode[]; edges: AtlasEdge[] } {
   const ordered = [...docs].sort((a, b) => hashString(a.id) - hashString(b.id));
   const seed = ordered.reduce((acc, d) => (acc ^ hashString(d.id)) >>> 0, 0x9e3779b9);
@@ -131,7 +149,7 @@ export function layoutFromDocuments(
     title: d.title ?? d.filename ?? "Untitled",
     position: positions[i],
     // Slight, deterministic size variation so the field has texture.
-    scale: 0.12 + (hashString(d.id) % 100) / 100 * 0.1,
+    scale: 0.1 + ((hashString(d.id) % 100) / 100) * 0.08,
   }));
   return { nodes, edges: nearestEdges(positions, 2) };
 }

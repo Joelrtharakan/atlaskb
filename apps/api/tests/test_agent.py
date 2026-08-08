@@ -89,3 +89,32 @@ def test_no_chunks_yields_cannot_answer():
         max_iterations=2,
     )
     assert res.answer.answerable is False
+
+
+def test_condense_rewrites_first_query_from_history():
+    """A follow-up is condensed into a standalone query before retrieval so the
+    right chunks are fetched even when the raw follow-up has no topical keywords."""
+    seen = {}
+
+    def retrieve(q):
+        seen["query"] = q
+        return [_chunk("c1")]
+
+    from app.llm import TokenUsage
+
+    def condense(_q):  # pretend history resolved "has that changed?" -> PTO
+        return "PTO policy recent change", TokenUsage(prompt=5, completion=5, total=10)
+
+    res = run_agent(
+        "has that changed recently?",
+        retrieve,
+        assess_fn=lambda a, b: Assessment(True),
+        generate_fn=_generate,
+        condense_fn=condense,
+        max_iterations=3,
+    )
+    # Retrieval ran on the rewritten query, and the raw follow-up was recorded.
+    assert seen["query"] == "PTO policy recent change"
+    assert res.queries == ["PTO policy recent change"]
+    assert res.usage.total == 10
+    assert res.answer.answerable is True

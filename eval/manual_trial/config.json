@@ -1,0 +1,10 @@
+{
+  "api_base": "http://localhost:8000",
+  "workspace_id": "f3d30555-e289-450f-8e49-cba368b975fe",
+  "principals": {
+    "admin":  "8164d544-7b11-481c-b2d4-7eccb519ad27",
+    "editor": "7e694c7a-4b1f-4f31-b957-434b90826f20",
+    "viewer": "7cbe441a-93c9-47e0-90ab-c7088cda0ce7"
+  },
+  "top_k": 8
+}

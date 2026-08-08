@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.logging_config import get_logger
-from app.models import ROLE_ADMIN, Tenant, TenantMembership, User
+from app.models import User
 from app.schemas import LoginRequest, RefreshRequest, SignupRequest, TokenPair, UserOut
 from app.security import (
     create_access_token,
@@ -36,24 +36,13 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)) -> User:
     if existing is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
-    # Every user gets a personal workspace (tenant) they administer. This is
-    # their default tenant when no X-Tenant-Id is supplied.
-    tenant = Tenant(name=f"{body.email}'s workspace")
-    db.add(tenant)
-    db.flush()
-
-    user = User(
-        email=body.email,
-        password_hash=hash_password(body.password),
-        tenant_id=tenant.id,
-    )
+    # A user account is separate from a workspace: on signup the user has no
+    # workspace. They must create one (POST /workspaces) or accept an invite.
+    user = User(email=body.email, password_hash=hash_password(body.password))
     db.add(user)
-    db.flush()
-
-    db.add(TenantMembership(tenant_id=tenant.id, user_id=user.id, role=ROLE_ADMIN))
     db.commit()
     db.refresh(user)
-    log.info("auth.signup", user_id=user.id, email=user.email, tenant_id=tenant.id)
+    log.info("auth.signup", user_id=user.id, email=user.email)
     return user
 
 

@@ -28,6 +28,9 @@ from app.retrieval import RetrievedChunk
 RetrieveFn = Callable[[str], list[RetrievedChunk]]
 AssessFn = Callable[[str, list[RetrievedChunk]], Assessment]
 GenerateFn = Callable[[str, list[RetrievedChunk]], GroundedAnswer]
+# Rewrites the question into a standalone retrieval query (resolving follow-up
+# references from conversation history); returns the query and its token usage.
+CondenseFn = Callable[[str], tuple[str, TokenUsage]]
 
 
 @dataclass
@@ -55,13 +58,16 @@ def _build_graph(
     retrieve_fn: RetrieveFn,
     assess_fn: AssessFn,
     generate_fn: GenerateFn,
+    condense_fn: CondenseFn,
     max_iterations: int,
 ):
     def plan(state: _State) -> dict:
         if state["iterations"] == 0:
-            query = state["question"]
-        else:
-            query = state.get("refined_query") or state["question"]
+            # First pass: rewrite the (possibly follow-up) question into a
+            # standalone retrieval query using conversation history.
+            query, usage = condense_fn(state["question"])
+            return {"current_query": query, "usage": state["usage"] + usage}
+        query = state.get("refined_query") or state["question"]
         return {"current_query": query}
 
     def retrieve(state: _State) -> dict:
@@ -116,14 +122,21 @@ def run_agent(
     *,
     assess_fn: AssessFn | None = None,
     generate_fn: GenerateFn | None = None,
+    condense_fn: CondenseFn | None = None,
     max_iterations: int | None = None,
 ) -> AgentResult:
-    """Run the retrieval agent to a grounded answer."""
+    """Run the retrieval agent to a grounded answer.
+
+    ``condense_fn`` rewrites a follow-up question into a standalone retrieval
+    query from conversation history; when omitted it is a no-op (the raw question
+    is used), which keeps single-turn behavior unchanged.
+    """
     assess_fn = assess_fn or llm.assess_context
     generate_fn = generate_fn or llm.generate_answer
+    condense_fn = condense_fn or (lambda q: (q, TokenUsage()))
     max_iterations = max_iterations or settings.agent_max_iterations
 
-    app = _build_graph(retrieve_fn, assess_fn, generate_fn, max_iterations)
+    app = _build_graph(retrieve_fn, assess_fn, generate_fn, condense_fn, max_iterations)
     final: _State = app.invoke(
         {
             "question": question,

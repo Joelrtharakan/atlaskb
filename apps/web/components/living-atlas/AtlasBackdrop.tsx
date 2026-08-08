@@ -20,7 +20,8 @@ export default function AtlasBackdrop() {
   if (!webgl) return null;
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-      <LivingAtlas mode="ambient" reducedMotion={reducedMotion} />
+      {/* Shift the field to the right so the left-margin cartouche sits on clean paper. */}
+      <LivingAtlas mode="ambient" reducedMotion={reducedMotion} offsetX={3.4} />
     </div>
   );
 }

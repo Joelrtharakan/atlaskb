@@ -34,7 +34,7 @@ def search(
 
     key = cache_key(
         namespace="search",
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         user_id=principal.user_id,
         model=f"{settings.embedding_model}:k{body.top_k}",
         query=body.query,
@@ -67,7 +67,7 @@ def search(
     log.info(
         "search.query",
         user_id=principal.user_id,
-        tenant_id=principal.tenant_id,
+        workspace_id=principal.workspace_id,
         top_k=body.top_k,
         hits=len(results),
         cached=False,

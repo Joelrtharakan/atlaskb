@@ -5,6 +5,7 @@ import type { TokenPair } from "./types";
 
 const ACCESS_KEY = "atlaskb.access";
 const REFRESH_KEY = "atlaskb.refresh";
+const WORKSPACE_KEY = "atlaskb.workspace";
 
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -24,4 +25,16 @@ export function setTokens(tokens: TokenPair): void {
 export function clearTokens(): void {
   window.localStorage.removeItem(ACCESS_KEY);
   window.localStorage.removeItem(REFRESH_KEY);
+  window.localStorage.removeItem(WORKSPACE_KEY);
+}
+
+/** The active workspace id, sent as X-Workspace-Id on scoped requests. */
+export function getActiveWorkspace(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(WORKSPACE_KEY);
+}
+
+export function setActiveWorkspace(id: string | null): void {
+  if (id) window.localStorage.setItem(WORKSPACE_KEY, id);
+  else window.localStorage.removeItem(WORKSPACE_KEY);
 }

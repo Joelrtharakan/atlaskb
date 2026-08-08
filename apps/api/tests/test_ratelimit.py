@@ -23,18 +23,16 @@ def test_per_user_limit_returns_429(client, make_user, rate_limit_on, monkeypatc
     assert "Retry-After" in r.headers
 
 
-def test_per_tenant_limit_counts_all_members(client, make_user, rate_limit_on, monkeypatch):
+def test_per_tenant_limit_counts_all_members(
+    client, make_user, grant_membership, rate_limit_on, monkeypatch
+):
     monkeypatch.setattr(settings, "rate_limit_user_per_min", 1000)
     monkeypatch.setattr(settings, "rate_limit_tenant_per_min", 3)
 
     admin = make_user()
-    member = make_user()
-    client.post(
-        f"/workspaces/{admin.tenant_id}/invite",
-        headers=admin.headers,
-        json={"email": member.email, "role": "viewer"},
-    )
-    member_hdr = {**member.headers, "X-Tenant-Id": admin.tenant_id}
+    member = make_user(create_workspace=False)
+    grant_membership(member.user_id, admin.workspace_id, "viewer")
+    member_hdr = member.in_ws(admin.workspace_id)
 
     # Two requests from admin + one from member = 3 (the tenant limit).
     assert client.post("/search", headers=admin.headers, json={"query": "x"}).status_code == 200

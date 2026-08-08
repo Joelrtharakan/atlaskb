@@ -16,6 +16,7 @@ from app.routers import (
     chat,
     conversations,
     documents,
+    invites,
     search,
     workspaces,
 )
@@ -26,6 +27,13 @@ log = get_logger(__name__)
 
 class HealthResponse(BaseModel):
     status: str
+
+
+class LLMHealthResponse(BaseModel):
+    provider: str
+    model: str
+    reachable: bool
+    model_available: bool
 
 
 def _require_runtime_secrets() -> None:
@@ -89,8 +97,18 @@ async def health() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
+@app.get("/health/llm", response_model=LLMHealthResponse)
+async def health_llm() -> LLMHealthResponse:
+    """LLM/Ollama availability. Reported separately from ``/health`` so a down LLM
+    never marks the whole API unhealthy — the app still serves auth, docs, search."""
+    from app.llm import ollama_health
+
+    return LLMHealthResponse(**ollama_health())
+
+
 app.include_router(auth.router)
 app.include_router(workspaces.router)
+app.include_router(invites.router)
 app.include_router(apikeys.router)
 app.include_router(admin.router)
 app.include_router(documents.router)

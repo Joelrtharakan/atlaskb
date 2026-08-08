@@ -21,7 +21,7 @@ from app.models import (
     Conversation,
     Document,
     Message,
-    TenantMembership,
+    WorkspaceMembership,
 )
 from app.rbac import Principal
 from app.redis_client import get_redis
@@ -44,32 +44,32 @@ def analytics(
     db: Session = Depends(get_db),
     principal: Principal = Depends(require_role(ROLE_ADMIN)),
 ) -> AnalyticsResponse:
-    tenant = principal.tenant_id
+    tenant = principal.workspace_id
 
     status_rows = db.execute(
         select(Document.status, func.count())
-        .where(Document.tenant_id == tenant)
+        .where(Document.workspace_id == tenant)
         .group_by(Document.status)
     ).all()
     by_status = {s: c for s, c in status_rows}
     documents_total = sum(by_status.values())
 
     chunks_total = db.scalar(
-        select(func.count()).select_from(Chunk).where(Chunk.tenant_id == tenant)
+        select(func.count()).select_from(Chunk).where(Chunk.workspace_id == tenant)
     )
     conversations_total = db.scalar(
-        select(func.count()).select_from(Conversation).where(Conversation.tenant_id == tenant)
+        select(func.count()).select_from(Conversation).where(Conversation.workspace_id == tenant)
     )
     messages_total = db.scalar(
-        select(func.count()).select_from(Message).where(Message.tenant_id == tenant)
+        select(func.count()).select_from(Message).where(Message.workspace_id == tenant)
     )
     members_total = db.scalar(
-        select(func.count()).select_from(TenantMembership).where(TenantMembership.tenant_id == tenant)
+        select(func.count()).select_from(WorkspaceMembership).where(WorkspaceMembership.workspace_id == tenant)
     )
     active_api_keys = db.scalar(
         select(func.count())
         .select_from(ApiKey)
-        .where(ApiKey.tenant_id == tenant, ApiKey.revoked_at.is_(None))
+        .where(ApiKey.workspace_id == tenant, ApiKey.revoked_at.is_(None))
     )
 
     # Questions/day for the last 7 days (a "user" message == one asked question).
@@ -78,7 +78,7 @@ def analytics(
     rows = db.execute(
         select(day.label("d"), func.count())
         .where(
-            Message.tenant_id == tenant,
+            Message.workspace_id == tenant,
             Message.role == "user",
             Message.created_at >= since,
         )
@@ -88,7 +88,7 @@ def analytics(
     daily = [DailyCount(day=d.date().isoformat(), count=c) for d, c in rows]
 
     return AnalyticsResponse(
-        tenant_id=tenant,
+        workspace_id=tenant,
         documents_total=documents_total,
         documents_by_status=by_status,
         chunks_total=chunks_total or 0,

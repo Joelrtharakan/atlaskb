@@ -89,3 +89,8 @@ def api_key_lookup(full_key: str) -> str | None:
 
 def hash_api_key(full_key: str) -> str:
     return _sha256(full_key)
+
+
+def generate_invite_token() -> str:
+    """A high-entropy, URL-safe invite token."""
+    return secrets.token_urlsafe(32)

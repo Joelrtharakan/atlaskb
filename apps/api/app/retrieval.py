@@ -57,7 +57,7 @@ def _scoped(stmt, principal: Principal):
     ACLs on retrieval — both dense and sparse queries go through it.
     """
     return stmt.join(Document, Chunk.document_id == Document.id).where(
-        Chunk.tenant_id == principal.tenant_id,
+        Chunk.workspace_id == principal.workspace_id,
         document_visible_clause(principal),
     )
 

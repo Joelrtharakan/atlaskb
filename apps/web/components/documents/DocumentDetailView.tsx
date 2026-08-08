@@ -8,6 +8,9 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiError, api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import type { DocumentDetail } from "@/lib/types";
+import { useWorkspace } from "@/lib/workspace";
+
+import { AccessScopeControl } from "./AccessScopeControl";
 
 const POLL_MS = 2000;
 
@@ -23,6 +26,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 }
 
 export function DocumentDetailView({ id }: { id: string }) {
+  const { active } = useWorkspace();
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,6 +119,10 @@ export function DocumentDetailView({ id }: { id: string }) {
               </Fact>
             ) : null}
           </dl>
+
+          {doc.can_manage_access && active ? (
+            <AccessScopeControl documentId={doc.id} workspaceId={active.id} />
+          ) : null}
 
           {doc.status === "ready" ? (
             <div className="flex flex-wrap gap-3">

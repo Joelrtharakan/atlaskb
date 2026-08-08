@@ -8,12 +8,15 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiError, api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { DocumentOut } from "@/lib/types";
+import { useWorkspace } from "@/lib/workspace";
 
 import { UploadControl } from "./UploadControl";
 
 const POLL_MS = 2000;
 
 export function DocumentsView() {
+  const { role } = useWorkspace();
+  const canUpload = role === "admin" || role === "editor";
   const [docs, setDocs] = useState<DocumentOut[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,7 +65,14 @@ export function DocumentsView() {
         </p>
       </div>
 
-      <UploadControl onUploaded={handleUploaded} />
+      {canUpload ? (
+        <UploadControl onUploaded={handleUploaded} />
+      ) : (
+        <p className="border border-graphite/30 bg-linen/50 px-4 py-3 text-sm text-graphite">
+          You have <span className="text-ink">viewer</span> access to this workspace — you can search
+          and chat, but only editors and admins can upload documents.
+        </p>
+      )}
 
       {/* Live summary for assistive tech. */}
       <p aria-live="polite" className="sr-only">
@@ -80,7 +90,9 @@ export function DocumentsView() {
           <EmptyState title="Loading the register…" />
         ) : docs.length === 0 ? (
           <EmptyState title="Nothing mapped yet —">
-            upload a document above to begin your survey.
+            {canUpload
+              ? "upload a document above to begin your survey."
+              : "an editor or admin needs to upload documents to this workspace."}
           </EmptyState>
         ) : (
           <div className="overflow-x-auto">

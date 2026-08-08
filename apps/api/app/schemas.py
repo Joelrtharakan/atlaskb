@@ -45,6 +45,7 @@ class DocumentOut(BaseModel):
     filename: str
     content_type: str
     status: str
+    source: str | None = "upload"
     error: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -52,6 +53,8 @@ class DocumentOut(BaseModel):
 
 class DocumentDetail(DocumentOut):
     chunk_count: int
+    # Whether the caller may edit this document's access scope.
+    can_manage_access: bool = False
 
 
 # --- Search ---
@@ -113,7 +116,7 @@ class ChatResponse(BaseModel):
     usage: TokenUsageOut = TokenUsageOut()
 
 
-# --- Workspaces / tenancy ---
+# --- Workspaces ---
 class WorkspaceCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 
@@ -129,16 +132,42 @@ class MemberOut(BaseModel):
     user_id: str
     email: str
     role: Role
-    created_at: datetime
+    joined_at: datetime
 
 
+class RoleUpdate(BaseModel):
+    role: Role
+
+
+# --- Invites ---
 class InviteRequest(BaseModel):
     email: EmailStr
     role: Role = "viewer"
 
 
-class RoleUpdate(BaseModel):
+class InviteOut(BaseModel):
+    id: str
+    workspace_id: str
+    email: str
     role: Role
+    token: str
+    # Convenience link the frontend can surface / email.
+    invite_url: str
+    expires_at: datetime
+    accepted_at: datetime | None = None
+
+
+class InviteAcceptOut(BaseModel):
+    workspace_id: str
+    role: Role
+
+
+class InvitePreview(BaseModel):
+    status: Literal["valid", "expired", "accepted", "invalid"]
+    email: str | None = None
+    role: Role | None = None
+    workspace_id: str | None = None
+    workspace_name: str | None = None
 
 
 # --- API keys ---
@@ -164,14 +193,20 @@ class ApiKeyCreated(ApiKeyOut):
     key: str
 
 
-# --- Document ACLs ---
-class DocumentACLUpdate(BaseModel):
-    # Empty list = open to all tenant members. Non-empty = restricted allowlist.
-    user_ids: list[str] = []
+# --- Document access grants ---
+class AccessGrant(BaseModel):
+    grant_type: Literal["role", "user"]
+    role_or_user_id: str
 
 
-class DocumentACLOut(BaseModel):
-    user_ids: list[str]
+class DocumentAccessUpdate(BaseModel):
+    # Empty list = visible to all workspace members. Non-empty = restricted to
+    # exactly these roles/users (owner and admins always retain access).
+    grants: list[AccessGrant] = []
+
+
+class DocumentAccessOut(BaseModel):
+    grants: list[AccessGrant]
 
 
 # --- Conversations ---
@@ -200,7 +235,7 @@ class DailyCount(BaseModel):
 
 
 class AnalyticsResponse(BaseModel):
-    tenant_id: str
+    workspace_id: str
     documents_total: int
     documents_by_status: dict[str, int]
     chunks_total: int
