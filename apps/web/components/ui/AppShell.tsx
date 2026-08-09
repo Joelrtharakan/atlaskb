@@ -13,12 +13,11 @@ import { Button } from "./Button";
 import { ContourProgress } from "./ContourProgress";
 import { Field } from "./Field";
 
-const BASE_NAV = [
+const CORE_NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/documents", label: "Documents" },
   { href: "/search", label: "Search" },
   { href: "/chat", label: "Chat" },
-  { href: "/settings", label: "Settings" },
 ];
 const ADMIN_NAV = [
   { href: "/members", label: "Members" },
@@ -26,6 +25,9 @@ const ADMIN_NAV = [
   { href: "/admin/content-gaps", label: "Content Gaps" },
   { href: "/admin/evals", label: "Evals" },
 ];
+/** Always last — after the admin links when present, so Settings reads as
+ *  "the one link that isn't part of the primary or admin workflow." */
+const SETTINGS_NAV = { href: "/settings", label: "Settings" };
 
 function Loading() {
   return (
@@ -119,7 +121,7 @@ function WorkspaceSwitcher() {
           setActive(e.target.value);
           window.location.reload();
         }}
-        className="max-w-[9rem] shrink-0 truncate border border-graphite/40 bg-linen/60 px-2 py-1 font-mono text-xs text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
+        className="max-w-[7rem] shrink-0 truncate border border-graphite/40 bg-linen/60 px-2 py-1 font-mono text-xs text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
       >
         {workspaces.map((w) => (
           <option key={w.id} value={w.id}>
@@ -138,7 +140,7 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
       href={href}
       aria-current={active ? "page" : undefined}
       className={
-        "shrink-0 border-b-2 px-2.5 py-1 font-mono text-xs uppercase tracking-cartouche " +
+        "shrink-0 border-b-2 px-2 py-1 font-mono text-xs uppercase tracking-cartouche " +
         "transition-colors focus-visible:outline-none focus-visible:ring-2 " +
         "focus-visible:ring-pewter focus-visible:ring-offset-2 focus-visible:ring-offset-linen " +
         (active
@@ -182,7 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <main className="h-screen overflow-hidden p-3 sm:p-5">
       <div className="neatline relative flex h-full flex-col overflow-hidden">
         <AuroraBackground />
-        <header className="relative z-10 flex items-center gap-4 border-b border-brass/20 bg-deep-chart/70 px-4 py-2.5 backdrop-blur-md sm:px-6">
+        <header className="relative z-10 flex items-center gap-3 border-b border-brass/20 bg-deep-chart/70 px-4 py-2.5 backdrop-blur-md sm:px-6">
           <Link href="/documents" className="flex shrink-0 items-center gap-2">
             <span aria-hidden className="text-pewter">
               ◈
@@ -190,9 +192,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="font-mono text-sm uppercase tracking-cartouche text-ink">AtlasKB</span>
           </Link>
           {/* Scrolls horizontally instead of wrapping if it ever runs out of
-              room — the header always stays a single line. */}
-          <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-            {BASE_NAV.map((item) => (
+              room — the header always stays a single line. Grouped into
+              core workflow / admin / settings, each set off by a divider. */}
+          <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
+            {CORE_NAV.map((item) => (
               <NavLink
                 key={item.href}
                 href={item.href}
@@ -202,7 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
             {isAdmin ? (
               <>
-                <span aria-hidden className="mx-1.5 h-4 w-px shrink-0 bg-graphite/30" />
+                <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-graphite/30" />
                 {ADMIN_NAV.map((item) => (
                   <NavLink
                     key={item.href}
@@ -213,8 +216,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 ))}
               </>
             ) : null}
+            <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-graphite/30" />
+            <NavLink
+              href={SETTINGS_NAV.href}
+              label={SETTINGS_NAV.label}
+              active={pathname === SETTINGS_NAV.href || pathname.startsWith(`${SETTINGS_NAV.href}/`)}
+            />
           </nav>
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2.5">
             <WorkspaceSwitcher />
             <span aria-hidden className="h-4 w-px bg-graphite/30" />
             {auth.email ? <UserBadge email={auth.email} /> : null}
