@@ -119,7 +119,7 @@ function WorkspaceSwitcher() {
           setActive(e.target.value);
           window.location.reload();
         }}
-        className="max-w-[12rem] truncate border border-graphite/40 bg-linen/60 px-2 py-1 font-mono text-xs text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
+        className="max-w-[9rem] shrink-0 truncate border border-graphite/40 bg-linen/60 px-2 py-1 font-mono text-xs text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
       >
         {workspaces.map((w) => (
           <option key={w.id} value={w.id}>
@@ -132,6 +132,41 @@ function WorkspaceSwitcher() {
   );
 }
 
+function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={
+        "shrink-0 border-b-2 px-2.5 py-1 font-mono text-xs uppercase tracking-cartouche " +
+        "transition-colors focus-visible:outline-none focus-visible:ring-2 " +
+        "focus-visible:ring-pewter focus-visible:ring-offset-2 focus-visible:ring-offset-linen " +
+        (active
+          ? "border-brass text-parchment"
+          : "border-transparent text-graphite hover:text-parchment")
+      }
+    >
+      {label}
+    </Link>
+  );
+}
+
+/** Initials badge standing in for the full email — the email is still
+ *  available via the tooltip and to screen readers, it just no longer
+ *  duplicates the workspace switcher's own label at full width. */
+function UserBadge({ email }: { email: string }) {
+  const initials = email.slice(0, 2).toUpperCase();
+  return (
+    <span
+      title={email}
+      aria-label={email}
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-graphite/40 bg-linen/60 font-mono text-[0.65rem] text-ink"
+    >
+      {initials}
+    </span>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const auth = useRequireAuth();
   const ws = useWorkspace();
@@ -141,48 +176,51 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!auth.ready || !auth.isAuthenticated || !ws.ready) return <Loading />;
   if (ws.workspaces.length === 0) return <CreateFirstWorkspace />;
 
-  const nav = ws.role === "admin" ? [...BASE_NAV, ...ADMIN_NAV] : BASE_NAV;
+  const isAdmin = ws.role === "admin";
 
   return (
     <main className="h-screen overflow-hidden p-3 sm:p-5">
       <div className="neatline relative flex h-full flex-col overflow-hidden">
         <AuroraBackground />
-        <header className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-brass/20 bg-deep-chart/70 px-4 py-3 backdrop-blur-md sm:px-6">
-          <div className="flex items-center gap-6">
-            <Link href="/documents" className="flex items-center gap-2">
-              <span aria-hidden className="text-pewter">
-                ◈
-              </span>
-              <span className="font-mono text-sm uppercase tracking-cartouche text-ink">AtlasKB</span>
-            </Link>
-            <nav aria-label="Primary" className="flex flex-wrap items-center gap-1">
-              {nav.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                return (
-                  <Link
+        <header className="relative z-10 flex items-center gap-4 border-b border-brass/20 bg-deep-chart/70 px-4 py-2.5 backdrop-blur-md sm:px-6">
+          <Link href="/documents" className="flex shrink-0 items-center gap-2">
+            <span aria-hidden className="text-pewter">
+              ◈
+            </span>
+            <span className="font-mono text-sm uppercase tracking-cartouche text-ink">AtlasKB</span>
+          </Link>
+          {/* Scrolls horizontally instead of wrapping if it ever runs out of
+              room — the header always stays a single line. */}
+          <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+            {BASE_NAV.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+              />
+            ))}
+            {isAdmin ? (
+              <>
+                <span aria-hidden className="mx-1.5 h-4 w-px shrink-0 bg-graphite/30" />
+                {ADMIN_NAV.map((item) => (
+                  <NavLink
                     key={item.href}
                     href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={
-                      "border-b-2 px-2 py-1 font-mono text-xs uppercase tracking-cartouche " +
-                      "transition-colors focus-visible:outline-none focus-visible:ring-2 " +
-                      "focus-visible:ring-pewter focus-visible:ring-offset-2 focus-visible:ring-offset-linen " +
-                      (active
-                        ? "border-brass text-parchment"
-                        : "border-transparent text-graphite hover:text-parchment")
-                    }
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
+                    label={item.label}
+                    active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+                  />
+                ))}
+              </>
+            ) : null}
+          </nav>
+          <div className="flex shrink-0 items-center gap-3">
             <WorkspaceSwitcher />
-            <span className="marginalia hidden text-xs sm:inline">{auth.email}</span>
+            <span aria-hidden className="h-4 w-px bg-graphite/30" />
+            {auth.email ? <UserBadge email={auth.email} /> : null}
             <Button
               variant="ghost"
+              className="px-2 py-1 text-[0.7rem]"
               onClick={() => {
                 auth.logout();
                 router.replace("/login");
