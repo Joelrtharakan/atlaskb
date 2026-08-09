@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 
-const HeroTerrain = dynamic(
-  () => import("@/components/landing/HeroTerrain").then((m) => m.HeroTerrain),
+const HeroSurveyScene = dynamic(
+  () => import("@/components/landing/HeroSurveyScene").then((m) => m.HeroSurveyScene),
   { ssr: false },
 );
 
@@ -19,11 +19,8 @@ export default function Home() {
       <div className="neatline relative flex min-h-[calc(100vh-1.5rem)] flex-col overflow-hidden sm:min-h-[calc(100vh-2.5rem)]">
         {/* The terrain massif: lower band on mobile (below the copy), right side on
             desktop — so text always sits on clean navy at any width. */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 z-0 h-[46%] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[62%]"
-        >
-          <HeroTerrain />
+        <div className="absolute inset-x-0 bottom-0 z-0 h-[46%] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[64%]">
+          <HeroSurveyScene />
         </div>
 
         {/* Navy scrim from the left → text always sits on solid navy, the terrain
