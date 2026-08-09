@@ -1,28 +1,34 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { ContourProgress } from "@/components/ui/ContourProgress";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SplitText } from "@/components/ui/SplitText";
 import { ApiError, api } from "@/lib/api";
 import { formatScore } from "@/lib/format";
 import type { SearchResponse } from "@/lib/types";
 
-const SearchSweep = dynamic(() => import("./SearchSweep").then((m) => m.SearchSweep), {
-  ssr: false,
-});
+import { ThreadsBackground } from "./ThreadsBackground";
 
-// Raw hybrid retrieval, exposed for demoing quality independent of generation.
-// Scores are system facts → mono, tabular. No generation, no citations here.
+// Raw hybrid retrieval, plotted like soundings on a chart. Scores are system
+// facts → mono. Threads plot behind the field and intensify while typing.
 export function SearchView() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  // Bumped on each search so the sweep component remounts and replays.
-  const [sweepKey, setSweepKey] = useState(0);
+  const [typing, setTyping] = useState(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function onType(v: string) {
+    setQuery(v);
+    // Pulse the plotting lines while the operator is entering a bearing.
+    setTyping(true);
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => setTyping(false), 500);
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,7 +38,6 @@ export function SearchView() {
     setError(null);
     try {
       setResults(await api.search(q, 10));
-      setSweepKey((k) => k + 1);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -45,88 +50,92 @@ export function SearchView() {
   }
 
   return (
-    <section className="mx-auto flex h-full max-w-4xl flex-col gap-6 p-4 sm:p-8">
-      <div>
-        <h1 className="font-display text-3xl font-medium text-ink">Search</h1>
-        <p className="mt-1 text-sm text-graphite">
-          Inspect hybrid retrieval directly — dense vectors and full-text, fused and ranked. This is
-          what the chat answer draws from.
-        </p>
-      </div>
+    <section className="relative flex h-full flex-col">
+      <ThreadsBackground active={typing || pending} />
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1">
-          <label
-            htmlFor="search-input"
-            className="font-mono text-xs uppercase tracking-cartouche text-graphite"
-          >
-            Query
-          </label>
-          <input
-            id="search-input"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. how does billing work?"
-            className="mt-1.5 w-full rounded-none border border-graphite/50 bg-linen/60 px-3 py-2 text-ink placeholder:text-graphite/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter focus-visible:ring-offset-2 focus-visible:ring-offset-linen"
-          />
+      <div className="relative z-10 mx-auto flex h-full w-full max-w-4xl flex-col gap-6 overflow-y-auto p-4 sm:p-8">
+        <div>
+          <h1 className="font-display text-3xl font-medium text-ink">
+            <SplitText text="Search" />
+          </h1>
+          <p className="mt-1 text-sm text-graphite">
+            Plot a bearing — dense vectors and full-text, fused and ranked. Each result is a
+            sounding, with its relevance read off like a depth.
+          </p>
         </div>
-        <Button type="submit" disabled={pending || query.trim().length === 0}>
-          {pending ? (
-            <>
-              <ContourProgress size={16} label="Searching" />
-              Searching…
-            </>
+
+        {/* Full-bleed coordinate input. */}
+        <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-brass"
+            >
+              ⌖
+            </span>
+            <input
+              id="search-input"
+              aria-label="Search query"
+              value={query}
+              onChange={(e) => onType(e.target.value)}
+              placeholder="Enter bearing…"
+              className="w-full cursor-crosshair rounded-none border-b-2 border-brass/50 bg-transparent py-3 pl-10 pr-3 font-mono text-lg text-parchment placeholder:text-graphite/60 focus:border-brass focus-visible:outline-none"
+            />
+          </div>
+          <Button type="submit" disabled={pending || query.trim().length === 0}>
+            {pending ? (
+              <>
+                <ContourProgress size={16} label="Plotting" />
+                Plotting…
+              </>
+            ) : (
+              "Plot"
+            )}
+          </Button>
+        </form>
+
+        {error ? (
+          <p role="alert" className="border border-signal-red/60 bg-signal-red/10 px-3 py-2 text-sm text-parchment">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="doc-rack min-h-0 flex-1">
+          {results === null ? (
+            <EmptyState title="No soundings yet —">
+              enter a bearing above to plot which chunks answer it, ranked by relevance.
+            </EmptyState>
+          ) : results.results.length === 0 ? (
+            <EmptyState title="No soundings returned —">
+              try a different bearing, or upload a document that covers this topic.
+            </EmptyState>
           ) : (
-            "Search"
+            <ol className="flex flex-col gap-2.5">
+              {results.results.map((chunk, i) => (
+                <li key={chunk.chunk_id}>
+                  <div className="doc-plate group flex items-start gap-4 rounded-sm px-4 py-3">
+                    <span className="mt-0.5 shrink-0 font-mono text-xs text-graphite">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm text-parchment">{chunk.text}</p>
+                      <p className="plate-meta mt-1 flex flex-wrap gap-x-3 font-mono text-[10px] text-graphite">
+                        <span>dense {formatScore(chunk.dense_score)}</span>
+                        <span>sparse {formatScore(chunk.sparse_score)}</span>
+                        {chunk.page_num != null ? <span>page {chunk.page_num}</span> : null}
+                        <span className="truncate">{chunk.chunk_id.slice(0, 8)}</span>
+                      </p>
+                    </div>
+                    {/* Relevance read off like a depth measurement. */}
+                    <span className="shrink-0 self-center font-mono text-sm text-brass">
+                      — {formatScore(chunk.score)} —
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ol>
           )}
-        </Button>
-      </form>
-
-      {error ? (
-        <p role="alert" className="border border-ink bg-ink/5 px-3 py-2 text-sm text-ink">
-          {error}
-        </p>
-      ) : null}
-
-      {results && results.results.length > 0 ? (
-        <div
-          key={sweepKey}
-          className="h-[180px] w-full overflow-hidden rounded-lg border border-graphite/20 bg-ink/[0.03]"
-          aria-hidden
-        >
-          <SearchSweep results={results.results} />
         </div>
-      ) : null}
-
-      <div className="min-h-0 flex-1">
-        {results === null ? (
-          <EmptyState title="Nothing searched yet —">
-            enter a query above to see which chunks answer it, ranked by relevance.
-          </EmptyState>
-        ) : results.results.length === 0 ? (
-          <EmptyState title="No chunks matched —">
-            try different words, or upload a document that covers this topic.
-          </EmptyState>
-        ) : (
-          <ol className="flex flex-col gap-3">
-            {results.results.map((chunk, i) => (
-              <li key={chunk.chunk_id} className="border border-graphite/30 p-4">
-                <div className="marginalia flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.7rem]">
-                  <span className="text-ink">#{i + 1}</span>
-                  <span>fused {formatScore(chunk.score)}</span>
-                  <span>dense {formatScore(chunk.dense_score)}</span>
-                  <span>sparse {formatScore(chunk.sparse_score)}</span>
-                  {chunk.page_num != null ? <span>page {chunk.page_num}</span> : null}
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-ink">{chunk.text}</p>
-                <p className="marginalia mt-2 truncate text-[0.65rem] text-graphite">
-                  {chunk.chunk_id}
-                  {chunk.section ? ` · ${chunk.section}` : ""}
-                </p>
-              </li>
-            ))}
-          </ol>
-        )}
       </div>
     </section>
   );

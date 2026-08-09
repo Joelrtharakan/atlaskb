@@ -108,6 +108,7 @@ export function ChatView() {
   const [pending, setPending] = useState(false);
   const [atlas, setAtlas] = useState<AtlasState>(IDLE);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [atlasOpen, setAtlasOpen] = useState(true);
 
   const endRef = useRef<HTMLDivElement>(null);
   const reqId = useRef(0);
@@ -224,8 +225,16 @@ export function ChatView() {
     // real, full-height box to fill (a flex row would otherwise collapse to the
     // short panel's height).
     <div className="flex h-full flex-col lg:flex-row">
-      {/* --- The Living Atlas (or its 2D fallback). --- */}
+      {/* --- The Living Atlas (collapsible) or its 2D fallback. --- */}
+      {atlasOpen ? (
       <div className="relative h-[38vh] shrink-0 border-b border-graphite/25 lg:h-auto lg:flex-1 lg:border-b-0 lg:border-r">
+        <button
+          type="button"
+          onClick={() => setAtlasOpen(false)}
+          className="absolute left-3 top-3 z-10 font-mono text-[0.65rem] uppercase tracking-cartouche text-graphite hover:text-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+        >
+          ▾ collapse
+        </button>
         {docs === null ? (
           <div className="flex h-full items-center justify-center">
             <ContourProgress size={40} label="Mapping your documents" />
@@ -269,6 +278,16 @@ export function ChatView() {
           Living Atlas{capabilities.functionalDegraded ? " · 2D" : ""}
         </span>
       </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAtlasOpen(true)}
+          className="flex shrink-0 items-center gap-2 border-b border-graphite/25 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-cartouche text-graphite hover:text-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass lg:h-auto lg:w-10 lg:flex-col lg:justify-center lg:border-b-0 lg:border-r"
+        >
+          <span aria-hidden>▸</span>
+          <span className="lg:[writing-mode:vertical-rl]">Living Atlas</span>
+        </button>
+      )}
 
       {/* --- The answer panel (always fully functional). --- */}
       {/* flex-1 in the stacked column (takes the height below the atlas) and a
@@ -291,16 +310,19 @@ export function ChatView() {
             <ol className="flex flex-col gap-6">
               {entries.map((entry) => {
                 if (entry.kind === "question") {
+                  // User message: right-aligned, deep-chart with a brass hairline.
                   return (
-                    <li key={entry.id} className="flex flex-col gap-1">
+                    <li key={entry.id} className="chat-enter flex flex-col items-end gap-1">
                       <span className="marginalia text-[0.7rem]">{entry.at} ▸ you asked</span>
-                      <p className="text-sm font-medium text-ink">{entry.text}</p>
+                      <p className="max-w-[85%] rounded-sm border border-brass/40 bg-deep-chart px-3 py-2 text-sm text-parchment">
+                        {entry.text}
+                      </p>
                     </li>
                   );
                 }
                 if (entry.kind === "pending") {
                   return (
-                    <li key={entry.id} aria-live="polite" className="flex items-center gap-2 pl-4">
+                    <li key={entry.id} aria-live="polite" className="chat-enter flex items-center gap-2 pl-4">
                       <ContourProgress size={18} label="Triangulating an answer" />
                       <span className="marginalia text-xs">triangulating…</span>
                     </li>
@@ -308,18 +330,21 @@ export function ChatView() {
                 }
                 if (entry.kind === "error") {
                   return (
-                    <li key={entry.id} className="flex flex-col gap-1">
+                    <li key={entry.id} className="chat-enter flex flex-col gap-1">
                       <span className="marginalia text-[0.7rem]">{entry.at} · could not answer</span>
-                      <p role="alert" className="border border-ink bg-ink/5 px-3 py-2 text-sm text-ink">
+                      <p role="alert" className="border border-signal-red/60 bg-signal-red/10 px-3 py-2 text-sm text-parchment">
                         {entry.message}
                       </p>
                     </li>
                   );
                 }
+                // Assistant message: left-aligned, parchment.
                 return (
-                  <li key={entry.id} className="flex flex-col gap-1">
+                  <li key={entry.id} className="chat-enter flex flex-col items-start gap-1">
                     <span className="marginalia text-[0.7rem]">{entry.at} · answer</span>
-                    <AnswerEntry resp={entry.resp} onHoverDoc={setHighlightedId} />
+                    <div className="max-w-[92%]">
+                      <AnswerEntry resp={entry.resp} onHoverDoc={setHighlightedId} />
+                    </div>
                   </li>
                 );
               })}

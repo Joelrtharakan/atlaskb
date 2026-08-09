@@ -9,12 +9,12 @@
  *   - threadCyan:  3D connection threads only
  */
 export const ATLAS = {
-  ink: "#12181F",
-  parchment: "#E9E2CF",
-  verdigris: "#3F6259",
-  brass: "#B08D4F",
-  signalAmber: "#E2A33B",
-  threadCyan: "#4FB8AE",
+  ink: "#0F1A24", // chart-navy (dark scene background)
+  parchment: "#E8E2D0",
+  verdigris: "#4A7C6F",
+  brass: "#C08A45",
+  signalAmber: "#E8A22B", // reserved: retrieval / active
+  threadCyan: "#22B2A6", // reserved: 3D connection threads
 } as const;
 
 export type AtlasColor = keyof typeof ATLAS;

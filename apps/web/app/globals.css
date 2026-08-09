@@ -4,29 +4,28 @@
 
 @layer base {
   :root {
-    color-scheme: light;
+    color-scheme: dark;
   }
 
   body {
-    /* Faint graticule wash so the linen reads as a map sheet, not flat paper.
-       Kept extremely subtle — structure, not decoration. */
-    background-color: theme("colors.linen");
+    /* Night chart-table: a faint brass graticule over deep navy — the sheet
+       under brass lamp light. Structure, not decoration. */
+    background-color: theme("colors.chart-navy");
     background-image:
-      linear-gradient(theme("colors.graphite") 1px, transparent 1px),
-      linear-gradient(90deg, theme("colors.graphite") 1px, transparent 1px);
+      linear-gradient(theme("colors.brass") 1px, transparent 1px),
+      linear-gradient(90deg, theme("colors.brass") 1px, transparent 1px);
     background-size: 96px 96px;
     background-position: -1px -1px;
-    /* graticule at ~4% opacity via layered near-transparent lines */
-    background-blend-mode: normal;
   }
 
-  /* The grid above is too strong at full graphite; tone it via a linen overlay. */
+  /* The brass grid at full strength is too loud; a near-opaque navy sheet lets
+     only a whisper of it through (~3–4%). */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
-    background: theme("colors.linen");
-    opacity: 0.94;
+    background: theme("colors.chart-navy");
+    opacity: 0.965;
     pointer-events: none;
     z-index: -1;
   }
@@ -55,6 +54,151 @@
   }
   100% {
     transform: translateX(400%);
+  }
+}
+
+/* Aurora far-layer drift — large, slow, low-amplitude so it reads as haze. */
+@keyframes aurora-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(40px, -30px, 0) scale(1.12);
+  }
+}
+@keyframes aurora-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-50px, 24px, 0) scale(0.94);
+  }
+}
+/* Honor reduced motion: freeze the haze to a composed frame. */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob {
+    animation: none !important;
+  }
+}
+
+/* Documents "rack": thin brass-edged plates in a gently receding row. Fake-3D
+   via CSS perspective + rotateY — cheap enough for a long list (no WebGL). */
+.doc-rack {
+  perspective: 1600px;
+}
+.doc-plate {
+  transform: rotateY(-7deg);
+  transform-origin: left center;
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.45s ease,
+    border-color 0.45s ease;
+  border-left: 2px solid theme("colors.brass");
+  background-color: theme("colors.deep-chart");
+}
+.doc-plate:hover,
+.doc-plate:focus-within {
+  transform: rotateY(0deg) translateZ(30px);
+  box-shadow: -8px 0 28px -8px rgba(192, 138, 69, 0.55); /* brass rim-light */
+  border-color: theme("colors.brass");
+}
+.plate-meta {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.doc-plate:hover .plate-meta,
+.doc-plate:focus-within .plate-meta {
+  opacity: 1;
+}
+
+/* One cohesive page-transition: incoming content fades + rises as a single
+   move (app/template.tsx re-mounts this per route). In-house (no GSAP). */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-enter {
+  animation: page-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none !important;
+  }
+}
+
+/* New chat message: quick fade + 6px rise. Fast and quiet — the page needs to
+   feel responsive, not showy. */
+@keyframes chat-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.chat-enter {
+  animation: chat-enter 0.2s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-enter {
+    animation: none !important;
+  }
+}
+
+/* Threads survey-line field: a slow drift so the plotting lines feel alive. */
+@keyframes threads-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(1.5%, -1%, 0);
+  }
+}
+.threads-drift {
+  animation: threads-drift 26s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .threads-drift {
+    animation: none !important;
+  }
+}
+
+/* SplitText letter reveal — staggered rise/fade on load. */
+@keyframes split-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em) rotate(2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-plate,
+  .doc-plate:hover,
+  .doc-plate:focus-within {
+    transform: none;
+    transition: none;
+  }
+  .plate-meta {
+    opacity: 1;
+  }
+  .split-letter {
+    animation: none !important;
+    opacity: 1 !important;
   }
 }
 

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ContourRing } from "@/components/ui/ContourRing";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { SplitText } from "@/components/ui/SplitText";
 import { ApiError, api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { DocumentOut } from "@/lib/types";
@@ -59,7 +60,9 @@ export function DocumentsView() {
   return (
     <section className="mx-auto flex h-full max-w-4xl flex-col gap-6 p-4 sm:p-8">
       <div>
-        <h1 className="font-display text-3xl font-medium text-ink">Documents</h1>
+        <h1 className="font-display text-3xl font-medium text-ink">
+          <SplitText text="Documents" />
+        </h1>
         <p className="mt-1 text-sm text-graphite">
           Your surveyed territory. Upload sources and watch them chart to <em>ready</em>.
         </p>
@@ -85,7 +88,7 @@ export function DocumentsView() {
         </p>
       ) : null}
 
-      <div className="min-h-0 flex-1 border border-graphite/30">
+      <div className="min-h-0 flex-1">
         {docs === null ? (
           <EmptyState title="Loading the register…" />
         ) : docs.length === 0 ? (
@@ -95,47 +98,35 @@ export function DocumentsView() {
               : "an editor or admin needs to upload documents to this workspace."}
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <caption className="sr-only">Your uploaded documents</caption>
-              <thead>
-                <tr className="border-b border-graphite/30">
-                  <th scope="col" className="px-4 py-2 font-mono text-xs uppercase tracking-cartouche text-graphite">
-                    Name
-                  </th>
-                  <th scope="col" className="px-4 py-2 font-mono text-xs uppercase tracking-cartouche text-graphite">
-                    Status
-                  </th>
-                  <th scope="col" className="px-4 py-2 font-mono text-xs uppercase tracking-cartouche text-graphite">
-                    Uploaded
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {docs.map((doc) => (
-                  <tr key={doc.id} className="border-b border-graphite/15 last:border-0">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/documents/${doc.id}`}
-                        className="text-ink underline decoration-pewter underline-offset-4 hover:decoration-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
-                      >
-                        {doc.filename}
-                      </Link>
-                      {doc.status === "failed" && doc.error ? (
-                        <p className="mt-1 text-xs text-graphite">
-                          Survey failed: {doc.error}. Fix the file and upload it again.
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={doc.status} />
-                    </td>
-                    <td className="marginalia px-4 py-3 text-xs">{formatDate(doc.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="doc-rack flex flex-col gap-2.5">
+            {docs.map((doc) => (
+              <li key={doc.id}>
+                <Link
+                  href={`/documents/${doc.id}`}
+                  className="doc-plate group flex items-center gap-4 rounded-sm px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                >
+                  <ContourRing status={doc.status} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-parchment">{doc.filename}</span>
+                    {/* Mono metadata slides in as the plate tilts forward. */}
+                    <span className="plate-meta mt-0.5 flex flex-wrap gap-x-3 font-mono text-[10px] text-graphite">
+                      <span>{doc.status}</span>
+                      <span>· {formatDate(doc.created_at)}</span>
+                      <span className="truncate">· {doc.id.slice(0, 8)}</span>
+                    </span>
+                    {doc.status === "failed" && doc.error ? (
+                      <span className="mt-1 block text-xs text-signal-red">
+                        Survey failed: {doc.error}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-cartouche text-graphite">
+                    open →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </section>

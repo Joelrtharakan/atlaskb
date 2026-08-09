@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
+import { AuroraBackground } from "@/components/shell/AuroraBackground";
 import { ApiError, api } from "@/lib/api";
 import { useRequireAuth } from "@/lib/auth";
 import { useWorkspace } from "@/lib/workspace";
@@ -144,8 +145,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <main className="h-screen overflow-hidden p-3 sm:p-5">
-      <div className="neatline flex h-full flex-col overflow-hidden">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite/25 px-4 py-3 sm:px-6">
+      <div className="neatline relative flex h-full flex-col overflow-hidden">
+        <AuroraBackground />
+        <header className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-brass/20 bg-deep-chart/70 px-4 py-3 backdrop-blur-md sm:px-6">
           <div className="flex items-center gap-6">
             <Link href="/documents" className="flex items-center gap-2">
               <span aria-hidden className="text-pewter">
@@ -166,8 +168,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                       "transition-colors focus-visible:outline-none focus-visible:ring-2 " +
                       "focus-visible:ring-pewter focus-visible:ring-offset-2 focus-visible:ring-offset-linen " +
                       (active
-                        ? "border-ink text-ink"
-                        : "border-transparent text-graphite hover:text-ink")
+                        ? "border-brass text-parchment"
+                        : "border-transparent text-graphite hover:text-parchment")
                     }
                   >
                     {item.label}
@@ -191,7 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="relative z-10 min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </main>
   );
