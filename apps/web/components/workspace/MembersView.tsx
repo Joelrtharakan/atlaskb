@@ -10,6 +10,8 @@ import { formatDate } from "@/lib/format";
 import type { Member, Role } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace";
 
+import { RoleFlag } from "./RoleFlag";
+
 const ROLES: Role[] = ["viewer", "editor", "admin"];
 
 export function MembersView() {
@@ -119,7 +121,12 @@ export function MembersView() {
               Create invite
             </Button>
           </div>
-          {inviteMsg ? <p className="mt-3 break-all text-xs text-ink">{inviteMsg}</p> : null}
+          {inviteMsg ? (
+            <p className="mt-3 flex items-start gap-2 break-all text-xs text-ink">
+              <RoleFlag key={inviteMsg} role={inviteRole} plant />
+              <span>{inviteMsg}</span>
+            </p>
+          ) : null}
           {inviteErr ? (
             <p role="alert" className="mt-3 border border-ink bg-ink/5 px-3 py-2 text-sm text-ink">
               {inviteErr}
@@ -155,7 +162,12 @@ export function MembersView() {
             <tbody>
               {members.map((m) => (
                 <tr key={m.user_id} className="border-b border-graphite/15 last:border-0">
-                  <td className="px-4 py-3 text-ink">{m.email}</td>
+                  <td className="px-4 py-3 text-ink">
+                    <span className="flex items-center gap-2">
+                      <RoleFlag role={m.role} plant />
+                      {m.email}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
                     {isAdmin ? (
                       <select

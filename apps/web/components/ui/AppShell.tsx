@@ -13,13 +13,16 @@ import { ContourProgress } from "./ContourProgress";
 import { Field } from "./Field";
 
 const BASE_NAV = [
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/documents", label: "Documents" },
   { href: "/search", label: "Search" },
   { href: "/chat", label: "Chat" },
+  { href: "/settings", label: "Settings" },
 ];
 const ADMIN_NAV = [
   { href: "/members", label: "Members" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/content-gaps", label: "Content Gaps" },
   { href: "/admin/evals", label: "Evals" },
 ];
 

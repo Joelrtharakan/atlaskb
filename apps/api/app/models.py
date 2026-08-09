@@ -11,7 +11,7 @@ means "visible to all workspace members".
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
@@ -168,11 +168,38 @@ class Document(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
+    # When a human last confirmed this document is still current. Null until the
+    # first verification; freshness then decays with age. Drives the Dashboard
+    # relief-map valleys and the Fog-of-War staleness signal (frontend), and is
+    # independent of retrieval/ACL logic.
+    last_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     owner: Mapped[User] = relationship(back_populates="documents")
     chunks: Mapped[list[Chunk]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
     )
+
+    @property
+    def staleness(self) -> float:
+        """0.0 (fresh) → 1.0 (fully stale), from age since last verification.
+
+        Age is measured from ``last_verified_at`` if the document has ever been
+        verified, otherwise from ``created_at``. Fully stale once older than
+        ``settings.staleness_max_age_days``. Read-only/derived — carried through
+        ``DocumentOut`` so the UI can render freshness without extra queries.
+        """
+        from app.config import settings
+
+        anchor = self.last_verified_at or self.created_at
+        if anchor is None:
+            return 0.0
+        if anchor.tzinfo is None:
+            anchor = anchor.replace(tzinfo=UTC)
+        age_days = (datetime.now(UTC) - anchor).total_seconds() / 86400.0
+        span = max(1, settings.staleness_max_age_days)
+        return max(0.0, min(1.0, age_days / span))
     grants: Mapped[list[DocumentAccessGrant]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
     )
@@ -277,6 +304,25 @@ class AuditLog(Base):
     target: Mapped[str | None] = mapped_column(String(200), nullable=True)
     meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ContentGapResolution(Base):
+    """Marks a content-gap cluster (identified by a stable key derived from its
+    representative query) as resolved. Gaps themselves are derived on the fly from
+    unanswered chat turns; only the resolution state is persisted."""
+
+    __tablename__ = "content_gap_resolutions"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "gap_key", name="uq_gap_resolution_ws_key"),
+    )
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    workspace_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
+    gap_key: Mapped[str] = mapped_column(String(32), nullable=False)
+    resolved_by: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
+    resolved_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 

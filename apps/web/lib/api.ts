@@ -14,13 +14,18 @@ import type {
   AccessGrant,
   Analytics,
   ChatResponse,
+  ChunkSamplesResponse,
+  ContentGapsResponse,
   DocumentAccess,
   DocumentDetail,
   DocumentOut,
   EvalResults,
+  LLMHealth,
   Invite,
   InvitePreview,
   Member,
+  QueryVolumeResponse,
+  ReliefSummary,
   Role,
   SearchResponse,
   TokenPair,
@@ -182,6 +187,42 @@ export const api = {
     return request<DocumentDetail>(`/documents/${id}`, {
       messages: { 404: "That document doesn't exist, or it isn't yours." },
     });
+  },
+
+  async verifyDocument(id: string): Promise<DocumentDetail> {
+    return request<DocumentDetail>(`/documents/${id}/verify`, { method: "POST" });
+  },
+
+  /** The document's chunks as Core-Sample strata (length + confidence + staleness). */
+  async documentChunks(id: string): Promise<ChunkSamplesResponse> {
+    return request<ChunkSamplesResponse>(`/documents/${id}/chunks`);
+  },
+
+  /** Relief-map data for the Dashboard: every visible doc's mass + staleness. */
+  async relief(): Promise<ReliefSummary> {
+    return request<ReliefSummary>("/dashboard/relief");
+  },
+
+  /** Content-gap clusters (admin) → Fog-of-War patches. */
+  async contentGaps(): Promise<ContentGapsResponse> {
+    return request<ContentGapsResponse>("/admin/content-gaps");
+  },
+
+  /** Mark a gap resolved; returns the updated gap set (that patch cleared). */
+  async resolveGap(key: string): Promise<ContentGapsResponse> {
+    return request<ContentGapsResponse>(`/admin/content-gaps/${key}/resolve`, {
+      method: "POST",
+    });
+  },
+
+  /** Daily query volume (admin) → drives the Trade Winds flow. */
+  async queryVolume(days = 14): Promise<QueryVolumeResponse> {
+    return request<QueryVolumeResponse>(`/admin/query-volume?days=${days}`);
+  },
+
+  /** Current LLM provider/model + reachability (for the Settings readout). */
+  async llmHealth(): Promise<LLMHealth> {
+    return request<LLMHealth>("/health/llm");
   },
 
   async uploadDocument(file: File): Promise<DocumentOut> {

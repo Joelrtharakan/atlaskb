@@ -95,6 +95,12 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 8
     rrf_k: int = 60
 
+    # --- Freshness / staleness (display only) ---
+    # A document is considered fully stale once it is this many days past its
+    # last verification (or creation, if never verified). Drives the relief-map
+    # valleys and fog signal in the UI; has no effect on retrieval or ACL.
+    staleness_max_age_days: int = 90
+
     # --- Agent (LangGraph) ---
     # Max retrieval iterations before the agent must answer with what it has.
     # Bounded to keep runaway re-querying (and cost) in check.

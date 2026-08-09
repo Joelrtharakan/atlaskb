@@ -1,16 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ContourProgress } from "@/components/ui/ContourProgress";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiError, api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
-import type { DocumentDetail } from "@/lib/types";
+import type { ChunkSample, DocumentDetail } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace";
 
 import { AccessScopeControl } from "./AccessScopeControl";
+import { SurveyGrid } from "./SurveyGrid";
+
+const CoreSample = dynamic(() => import("./CoreSample").then((m) => m.CoreSample), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse bg-ink/5" aria-hidden />,
+});
 
 const POLL_MS = 2000;
 
@@ -28,6 +35,8 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 export function DocumentDetailView({ id }: { id: string }) {
   const { active } = useWorkspace();
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
+  const [layers, setLayers] = useState<ChunkSample[] | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,8 +69,26 @@ export function DocumentDetailView({ id }: { id: string }) {
     };
   }, [doc, load]);
 
+  // Once the survey completes, pull the strata for the Core Sample.
+  useEffect(() => {
+    if (doc?.status !== "ready") return;
+    let cancelled = false;
+    api
+      .documentChunks(id)
+      .then((r) => !cancelled && setLayers(r.layers))
+      .catch(() => !cancelled && setLayers([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [doc?.status, id]);
+
+  const hoveredChunk = useMemo(
+    () => layers?.find((l) => l.chunk_id === hovered) ?? null,
+    [layers, hovered],
+  );
+
   return (
-    <section className="mx-auto flex h-full max-w-3xl flex-col gap-6 p-4 sm:p-8">
+    <section className="mx-auto flex min-h-full max-w-4xl flex-col gap-6 p-4 sm:p-8">
       <Link
         href="/documents"
         className="font-mono text-xs uppercase tracking-cartouche text-graphite hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
@@ -119,6 +146,48 @@ export function DocumentDetailView({ id }: { id: string }) {
               </Fact>
             ) : null}
           </dl>
+
+          {doc.status === "processing" ? (
+            <div className="rounded-lg border border-graphite/20 bg-linen/30 p-4">
+              <SurveyGrid label="Surveying document" />
+            </div>
+          ) : null}
+
+          {doc.status === "ready" && layers && layers.length > 0 ? (
+            <div>
+              <p className="marginalia text-[0.7rem] uppercase tracking-cartouche text-graphite">
+                Core sample
+              </p>
+              <p className="mt-1 text-sm text-graphite">
+                Each stratum is a chunk — thickness is its length, color its embedding centrality
+                (solid verdigris = representative, pale brass = outlier). Hover a layer to read it.
+              </p>
+              <div data-testid="core-sample" className="mt-3 grid gap-4 sm:grid-cols-[1fr_1.1fr]">
+                <div className="h-[380px] overflow-hidden rounded-lg border border-graphite/25 bg-ink/[0.03]">
+                  <CoreSample layers={layers} hoveredId={hovered} onHover={setHovered} />
+                </div>
+                <div className="rounded-lg border border-graphite/20 bg-linen/30 p-4">
+                  {hoveredChunk ? (
+                    <>
+                      <p className="font-mono text-[10px] uppercase tracking-cartouche text-graphite">
+                        Chunk #{hoveredChunk.chunk_index}
+                        {hoveredChunk.page_num != null ? ` · page ${hoveredChunk.page_num}` : ""}
+                        {` · ${Math.round(hoveredChunk.confidence * 100)}% central`}
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-ink">
+                        {hoveredChunk.preview}
+                        {hoveredChunk.length > hoveredChunk.preview.length ? "…" : ""}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-graphite">
+                      Hover a stratum to read that chunk’s text. {layers.length} chunks in this core.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {doc.can_manage_access && active ? (
             <AccessScopeControl documentId={doc.id} workspaceId={active.id} />

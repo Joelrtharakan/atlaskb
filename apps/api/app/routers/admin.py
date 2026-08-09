@@ -12,12 +12,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.content_gaps import compute_gaps
 from app.db import get_db
 from app.deps import require_role
 from app.models import (
     ROLE_ADMIN,
     ApiKey,
     Chunk,
+    ContentGapResolution,
     Conversation,
     Document,
     Message,
@@ -25,7 +27,14 @@ from app.models import (
 )
 from app.rbac import Principal
 from app.redis_client import get_redis
-from app.schemas import AnalyticsResponse, DailyCount
+from app.schemas import (
+    AnalyticsResponse,
+    ContentGap,
+    ContentGapsResponse,
+    DailyCount,
+    QueryVolumePoint,
+    QueryVolumeResponse,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -122,3 +131,79 @@ def evals(
         )
     data["available"] = True
     return data
+
+
+@router.get("/content-gaps", response_model=ContentGapsResponse)
+def content_gaps(
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_role(ROLE_ADMIN)),
+) -> ContentGapsResponse:
+    """Clusters of questions the assistant couldn't answer → Fog-of-War patches."""
+    resolved = set(
+        db.scalars(
+            select(ContentGapResolution.gap_key).where(
+                ContentGapResolution.workspace_id == principal.workspace_id
+            )
+        ).all()
+    )
+    gaps = compute_gaps(db, principal.workspace_id, resolved)
+    return ContentGapsResponse(gaps=[ContentGap(**vars(g)) for g in gaps])
+
+
+@router.post("/content-gaps/{gap_key}/resolve", response_model=ContentGapsResponse)
+def resolve_content_gap(
+    gap_key: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_role(ROLE_ADMIN)),
+) -> ContentGapsResponse:
+    """Mark a gap cluster resolved (clears its fog). Idempotent."""
+    exists = db.scalar(
+        select(ContentGapResolution).where(
+            ContentGapResolution.workspace_id == principal.workspace_id,
+            ContentGapResolution.gap_key == gap_key,
+        )
+    )
+    if exists is None:
+        db.add(
+            ContentGapResolution(
+                workspace_id=principal.workspace_id,
+                gap_key=gap_key,
+                resolved_by=principal.user_id,
+            )
+        )
+        db.commit()
+    resolved = set(
+        db.scalars(
+            select(ContentGapResolution.gap_key).where(
+                ContentGapResolution.workspace_id == principal.workspace_id
+            )
+        ).all()
+    )
+    gaps = compute_gaps(db, principal.workspace_id, resolved)
+    return ContentGapsResponse(gaps=[ContentGap(**vars(g)) for g in gaps])
+
+
+@router.get("/query-volume", response_model=QueryVolumeResponse)
+def query_volume(
+    days: int = 14,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_role(ROLE_ADMIN)),
+) -> QueryVolumeResponse:
+    """Daily count of user questions over the last N days (feeds Trade Winds)."""
+    days = max(1, min(90, days))
+    since = datetime.now(UTC) - timedelta(days=days)
+    rows = db.execute(
+        select(
+            func.date(Message.created_at).label("d"),
+            func.count().label("c"),
+        )
+        .where(
+            Message.workspace_id == principal.workspace_id,
+            Message.role == "user",
+            Message.created_at >= since,
+        )
+        .group_by(func.date(Message.created_at))
+        .order_by(func.date(Message.created_at))
+    ).all()
+    points = [QueryVolumePoint(date=str(d), count=int(c)) for d, c in rows]
+    return QueryVolumeResponse(points=points)

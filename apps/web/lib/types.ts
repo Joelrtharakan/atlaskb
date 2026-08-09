@@ -23,11 +23,79 @@ export type DocumentOut = {
   error: string | null;
   created_at: string;
   updated_at: string;
+  // Freshness signal (display only): 0 = fresh, 1 = fully stale.
+  last_verified_at?: string | null;
+  staleness?: number;
 };
 
 export type DocumentDetail = DocumentOut & {
   chunk_count: number;
   can_manage_access: boolean;
+};
+
+/** One chunk as a stratum of the Core Sample. */
+export type ChunkSample = {
+  chunk_id: string;
+  chunk_index: number;
+  length: number;
+  page_num: number | null;
+  section: string | null;
+  preview: string;
+  confidence: number;
+  staleness: number;
+};
+
+export type ChunkSamplesResponse = {
+  document_id: string;
+  filename: string;
+  layers: ChunkSample[];
+};
+
+/** One document as a cell of the Dashboard relief map. */
+export type ReliefCell = {
+  id: string;
+  filename: string;
+  status: DocumentStatus;
+  /** Chunk count → peak height. */
+  mass: number;
+  /** 0..1 → pulls the cell down into a valley. */
+  staleness: number;
+};
+
+export type ReliefSummary = {
+  cells: ReliefCell[];
+};
+
+/** An unanswered-question cluster → one fog patch on the Fog-of-War map. */
+export type ContentGap = {
+  key: string;
+  query: string;
+  count: number;
+  x: number;
+  y: number;
+  radius: number;
+  resolved: boolean;
+  members: string[];
+};
+
+export type ContentGapsResponse = {
+  gaps: ContentGap[];
+};
+
+export type QueryVolumePoint = {
+  date: string;
+  count: number;
+};
+
+export type QueryVolumeResponse = {
+  points: QueryVolumePoint[];
+};
+
+export type LLMHealth = {
+  provider: string;
+  model: string;
+  reachable: boolean;
+  model_available: boolean;
 };
 
 export type Role = "viewer" | "editor" | "admin";

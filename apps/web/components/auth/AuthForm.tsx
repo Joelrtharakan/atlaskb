@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
@@ -9,6 +10,11 @@ import { ContourProgress } from "@/components/ui/ContourProgress";
 import { Field } from "@/components/ui/Field";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+
+const AuthCompass = dynamic(
+  () => import("./AuthCompass").then((m) => m.AuthCompass),
+  { ssr: false },
+);
 
 type Mode = "login" | "signup";
 
@@ -87,7 +93,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </Link>
         </header>
 
-        <div className="flex flex-1 items-center px-6 sm:px-10">
+        <div className="flex flex-1 items-center gap-10 px-6 sm:px-10">
           <div className="w-full max-w-sm">
             <p className="marginalia mb-3 text-[0.7rem] uppercase tracking-cartouche text-graphite">
               {copy.eyebrow}
@@ -147,6 +153,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 {copy.altLabel}
               </Link>
             </p>
+          </div>
+
+          {/* Understated compass — larger screens only, never louder than the form. */}
+          <div className="hidden h-64 flex-1 items-center justify-center lg:flex" aria-hidden>
+            <div className="h-56 w-56">
+              <AuthCompass />
+            </div>
           </div>
         </div>
       </div>

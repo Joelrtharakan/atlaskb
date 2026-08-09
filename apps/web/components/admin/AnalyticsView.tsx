@@ -1,10 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ApiError, api } from "@/lib/api";
-import type { Analytics } from "@/lib/types";
+import type { Analytics, QueryVolumePoint } from "@/lib/types";
+
+const TradeWinds = dynamic(() => import("./TradeWinds").then((m) => m.TradeWinds), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse bg-ink/5" aria-hidden />,
+});
 
 // A quiet register, not a dashboard: hairline-ruled rows, system numbers in mono.
 // No beacon/meridian, no animation — this surface holds still (design plan §6).
@@ -20,6 +26,7 @@ function Stat({ label, value }: { label: string; value: number | string }) {
 
 export function AnalyticsView() {
   const [data, setData] = useState<Analytics | null>(null);
+  const [volume, setVolume] = useState<QueryVolumePoint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +40,10 @@ export function AnalyticsView() {
             : "Couldn't load analytics. Check the backend is running and refresh.",
         ),
       );
+    api
+      .queryVolume(14)
+      .then((r) => setVolume(r.points))
+      .catch(() => setVolume([]));
   }, []);
 
   return (
@@ -43,6 +54,18 @@ export function AnalyticsView() {
           A quiet register of this workspace&rsquo;s activity — counted from the live database.
         </p>
       </div>
+
+      {volume && volume.length > 0 ? (
+        <figure className="shrink-0">
+          <div className="h-[200px] w-full overflow-hidden rounded-lg border border-graphite/20 bg-ink/[0.03]">
+            <TradeWinds points={volume} />
+          </div>
+          <figcaption className="mt-1 font-mono text-[10px] uppercase tracking-cartouche text-graphite">
+            Trade winds — usage flow; density &amp; speed track query volume (
+            {volume.reduce((s, p) => s + p.count, 0)} in {volume.length} days)
+          </figcaption>
+        </figure>
+      ) : null}
 
       {error ? (
         <p role="alert" className="border border-ink bg-ink/5 px-3 py-2 text-sm text-ink">

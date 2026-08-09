@@ -335,3 +335,124 @@
 {"status_code": 200, "duration_ms": 47969.5, "event": "request.complete", "request_id": "10e09108-6342-4bda-9d59-70b2fd4debb2", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:27:37.646418Z"}
 {"event": "127.0.0.1:65087 - \"POST /chat HTTP/1.1\" 200", "request_id": "10e09108-6342-4bda-9d59-70b2fd4debb2", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:27:37.646711Z"}
 Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  3.38it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  3.37it/s]
+{"event": "HTTP Request: POST http://127.0.0.1:11434/v1/chat/completions \"HTTP/1.1 200 OK\"", "request_id": "ed0387d8-efe7-40d7-b2c9-de72b944d682", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:11.593794Z"}
+{"user_id": "8164d544-7b11-481c-b2d4-7eccb519ad27", "workspace_id": "f3d30555-e289-450f-8e49-cba368b975fe", "answerable": true, "iterations": 1, "tokens": 2209, "cached": false, "event": "chat.answer", "request_id": "ed0387d8-efe7-40d7-b2c9-de72b944d682", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:11.689563Z"}
+{"status_code": 200, "duration_ms": 33203.67, "event": "request.complete", "request_id": "ed0387d8-efe7-40d7-b2c9-de72b944d682", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:11.696236Z"}
+{"event": "127.0.0.1:65460 - \"POST /chat HTTP/1.1\" 200", "request_id": "ed0387d8-efe7-40d7-b2c9-de72b944d682", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:11.697449Z"}
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  3.26it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  3.25it/s]
+{"event": "HTTP Request: POST http://127.0.0.1:11434/v1/chat/completions \"HTTP/1.1 200 OK\"", "request_id": "d3bef422-2862-48e1-bde1-4236b26ccbf4", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:52.649157Z"}
+{"user_id": "8164d544-7b11-481c-b2d4-7eccb519ad27", "workspace_id": "f3d30555-e289-450f-8e49-cba368b975fe", "answerable": true, "iterations": 1, "tokens": 2491, "cached": false, "event": "chat.answer", "request_id": "d3bef422-2862-48e1-bde1-4236b26ccbf4", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:52.901369Z"}
+{"status_code": 200, "duration_ms": 40352.02, "event": "request.complete", "request_id": "d3bef422-2862-48e1-bde1-4236b26ccbf4", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:52.911054Z"}
+{"event": "127.0.0.1:49307 - \"POST /chat HTTP/1.1\" 200", "request_id": "d3bef422-2862-48e1-bde1-4236b26ccbf4", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:28:52.911281Z"}
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  5.10it/s]Batches: 100%|██████████| 1/1 [00:00<00:00,  5.10it/s]
+{"event": "HTTP Request: POST http://127.0.0.1:11434/v1/chat/completions \"HTTP/1.1 200 OK\"", "request_id": "22d75353-1f7e-4898-9c82-21708080105c", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:29:29.431280Z"}
+{"user_id": "8164d544-7b11-481c-b2d4-7eccb519ad27", "workspace_id": "f3d30555-e289-450f-8e49-cba368b975fe", "answerable": true, "iterations": 1, "tokens": 2429, "cached": false, "event": "chat.answer", "request_id": "22d75353-1f7e-4898-9c82-21708080105c", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:29:29.482416Z"}
+{"status_code": 200, "duration_ms": 35723.66, "event": "request.complete", "request_id": "22d75353-1f7e-4898-9c82-21708080105c", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:29:29.490598Z"}
+{"event": "127.0.0.1:49552 - \"POST /chat HTTP/1.1\" 200", "request_id": "22d75353-1f7e-4898-9c82-21708080105c", "path": "/chat", "method": "POST", "level": "info", "timestamp": "2026-08-09T05:29:29.491006Z"}
+
+=== /search ===
+  [PASS   ] s_basic_pto      top3 sources=['allhands', 'handbook', 'allhands'] want-any=['handbook', 'allhands'] | top score 0.0328 vs #2 0
+  [PASS   ] s_basic_servo    top3 sources=['allhands', 'falcon', 'falcon'] want-any=['falcon', 'allhands'] | top score 0.0328 vs #2 0.0323
+  [PASS   ] s_basic_oncall   top3 sources=['onboarding', 'onboarding', 'allhands'] want-any=['onboarding', 'allhands'] | top score 0.0325 v
+  [PASS   ] s_basic_expense  top3 sources=['handbook', 'restricted', 'restricted'] want-any=['handbook'] | top score 0.0328 vs #2 0.0161
+  [PASS   ] s_tok_iso        top3 sources=['allhands', 'falcon', 'onboarding'] want-any=['falcon', 'allhands'] | top score 0.0325 vs #2 0.0
+  [PASS   ] s_tok_cost       top3 sources=['allhands', 'allhands', 'restricted'] want-any=['allhands'] | top score 0.0323 vs #2 0.0318
+  [PASS   ] s_tok_12kg       top3 sources=['falcon', 'allhands', 'restricted'] want-any=['falcon'] | top score 0.0328 vs #2 0.0161
+  [PASS   ] s_tok_nwcli      top3 sources=['onboarding', 'allhands', 'onboarding'] want-any=['onboarding'] | top score 0.0325 vs #2 0.0164
+  [PASS   ] s_sem_timeoff    top3 sources=['handbook', 'handbook', 'allhands'] want-any=['handbook', 'allhands'] | top score 0.0164 vs #2 0
+  [PASS   ] s_sem_stops      top3 sources=['falcon', 'allhands', 'falcon'] want-any=['falcon'] | top score 0.0323 vs #2 0.0164
+  [PASS   ] s_sem_confidential top3 sources=['security', 'security', 'restricted'] want-any=['security'] | top score 0.0164 vs #2 0.0161
+  [PASS   ] s_typo_servo     top3 sources=['allhands', 'falcon', 'falcon'] want-any=['falcon', 'allhands'] | top score 0.0164 vs #2 0.0161
+  [PASS   ] s_typo_falcon    top3 sources=['falcon', 'falcon', 'allhands'] want-any=['falcon'] | top score 0.0164 vs #2 0.0161
+  [PASS   ] s_amb_access     distinct sources=['security', 'onboarding', 'allhands', 'restricted']
+  [PASS   ] s_amb_gateway    distinct sources=['onboarding', 'allhands', 'falcon', 'security']
+  [PASS   ] s_absent_battery max dense_score=0.1626 (thr 0.55), top src=security
+  [PASS   ] s_absent_refund  max dense_score=0.1735 (thr 0.55), top src=security
+  [PASS   ] s_acl_salary     restricted excluded (sources=['handbook', 'onboarding', 'allhands', 'security'])
+  [PASS   ] s_acl_severance  restricted excluded (sources=['handbook', 'allhands', 'security', 'onboarding'])
+
+=== /chat threads ===
+-- thread A (Pronoun/context follow-up) as admin
+  [PASS   ] A1               text-match=True | answerable=True cites=2
+  [PASS   ] A2               text-match=True | answerable=True cites=1
+-- thread B (Ambiguous question) as admin
+  [MANUAL ] B1               HINT_MATCH=True (needs human confirmation) | answerable=True cites=2
+-- thread C (Progressive drill-down) as admin
+  [PASS   ] C1               text-match=True | answerable=True cites=5
+  [PASS   ] C2               text-match=True | answerable=True cites=1
+  [PASS   ] C3               text-match=True | answerable=True cites=1
+-- thread D (False-premise correction) as admin
+  [PASS   ] D1               corrected/declined false premise | answerable=False cites=0
+-- thread E (Topic switch and return) as admin
+  [PASS   ] E1               text-match=True | answerable=True cites=1
+  [PASS   ] E2               text-match=True | answerable=True cites=1
+  [PASS   ] E3               text-match=True | answerable=True cites=1
+-- thread G (Long-conversation stability / self-referential / citation drill-down) as admin
+  [PASS   ] G1               text-match=True | answerable=True cites=1
+  [PASS   ] G2               text-match=True | answerable=True cites=1
+  [PASS   ] G3               text-match=True | answerable=True cites=1
+  [PASS   ] G4               text-match=True | answerable=True cites=1
+  [PASS   ] G5               text-match=True | answerable=True cites=1
+  [MANUAL ] G6               HINT_MATCH=False (needs human confirmation) | answerable=True cites=0
+  [PASS   ] G7               text-match=True | answerable=True cites=1
+  [MANUAL ] G8               HINT_MATCH=True (needs human confirmation) | answerable=True cites=0
+-- thread H (Refusal persistence under social pressure) as viewer
+  [PASS   ] H1               refused with no leakage | answerable=False cites=0
+  [PASS   ] H2               refused with no leakage | answerable=False cites=0
+  [PASS   ] H3               refused with no leakage | answerable=False cites=0
+
+=== PDF-specific ===
+  [PASS   ] p_falcon_v2_reach text-match=True | answerable=True cites=1
+  [PASS   ] p_falcon_v2_power text-match=True | answerable=True cites=1
+  [PASS   ] p_log_retention  text-match=True | answerable=True cites=1
+  [PASS   ] p_test_coverage  text-match=True | answerable=True cites=1
+  [PASS   ] p_day4           text-match=True | answerable=True cites=1
+  [PASS   ] p_iso_timing     text-match=True | answerable=True cites=1
+  [PASS   ] p_board_vp       text-match=True | answerable=True cites=1
+  [PASS   ] p_viewer_restricted text-match=True | answerable=True cites=2
+  [PASS   ] p_code_review    text-match=True | answerable=True cites=1
+  [PASS   ] p_expense_table  text-match=True | answerable=True cites=1
+  [PASS   ] p_cost_diff      text-match=True | answerable=True cites=2
+  [PASS   ] p_vesting_2yr    corrected/declined false premise | answerable=False cites=0
+  [PASS   ] p_arch_bridge    text-match=True | answerable=True cites=1
+  [PASS   ] p_leak_exists    refused with no leakage | answerable=False cites=0
+  [PASS   ] p_banner_admin   text-match=True | answerable=True cites=1
+  [PASS   ] p_cost_pct       text-match=True | answerable=True cites=2
+  [PASS   ] p_vp_severance   text-match=True | answerable=True cites=2
+
+Wrote /Users/joeltharakan/Documents/Atlaskb/eval/manual_trial/results/after.json
+
+===== SUMMARY =====
+overall: {'pass': 54, 'partial': 0, 'fail': 0, 'manual': 3, 'blocked': 0}
+
+by root-cause layer:
+  access_control   {'pass': 6, 'partial': 0, 'fail': 0, 'manual': 0, 'blocked': 0}
+  agent            {'pass': 14, 'partial': 0, 'fail': 0, 'manual': 3, 'blocked': 0}
+  chunking         {'pass': 4, 'partial': 0, 'fail': 0, 'manual': 0, 'blocked': 0}
+  generation       {'pass': 1, 'partial': 0, 'fail': 0, 'manual': 0, 'blocked': 0}
+  ingestion        {'pass': 10, 'partial': 0, 'fail': 0, 'manual': 0, 'blocked': 0}
+  retrieval        {'pass': 19, 'partial': 0, 'fail': 0, 'manual': 0, 'blocked': 0}
+wrote /Users/joeltharakan/Documents/Atlaskb/eval/manual_trial/AFTER_COMPARISON.md
+{"event": "Shutting down", "level": "info", "timestamp": "2026-08-09T05:29:30.542708Z"}
+{"event": "Waiting for application shutdown.", "level": "info", "timestamp": "2026-08-09T05:29:30.659064Z"}
+{"app_name": "atlaskb-api", "event": "api.shutdown", "level": "info", "timestamp": "2026-08-09T05:29:30.670567Z"}
+{"event": "Application shutdown complete.", "level": "info", "timestamp": "2026-08-09T05:29:30.672202Z"}
+{"event": "Finished server process [48620]", "level": "info", "timestamp": "2026-08-09T05:29:30.673753Z"}
+/Users/joeltharakan/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+{"event": "Started server process [70435]", "level": "info", "timestamp": "2026-08-09T05:29:35.872169Z"}
+{"event": "Waiting for application startup.", "level": "info", "timestamp": "2026-08-09T05:29:35.872285Z"}
+{"app_name": "atlaskb-api", "event": "api.startup", "level": "info", "timestamp": "2026-08-09T05:29:35.872431Z"}
+{"event": "Application startup complete.", "level": "info", "timestamp": "2026-08-09T05:29:35.872549Z"}
+{"event": "Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)", "level": "info", "timestamp": "2026-08-09T05:29:35.874030Z"}
+{"status_code": 200, "duration_ms": 1.41, "event": "request.complete", "method": "GET", "path": "/health", "request_id": "4e1853df-3096-4e73-8abb-cc216721a196", "level": "info", "timestamp": "2026-08-09T05:29:41.661774Z"}
+{"event": "127.0.0.1:49853 - \"GET /health HTTP/1.1\" 200", "method": "GET", "path": "/health", "request_id": "4e1853df-3096-4e73-8abb-cc216721a196", "level": "info", "timestamp": "2026-08-09T05:29:41.662091Z"}
+{"status":"ok"}
+[auto_after] done Sun Aug  9 05:29:41 UTC 2026
+{"status_code": 200, "duration_ms": 31.5, "event": "request.complete", "method": "GET", "path": "/health", "request_id": "3e721cd6-2bf5-4b12-bbd4-c7ca01025787", "level": "info", "timestamp": "2026-08-09T05:32:08.342703Z"}
+{"event": "127.0.0.1:50659 - \"GET /health HTTP/1.1\" 200", "method": "GET", "path": "/health", "request_id": "3e721cd6-2bf5-4b12-bbd4-c7ca01025787", "level": "info", "timestamp": "2026-08-09T05:32:08.352820Z"}
+{"event": "Shutting down", "level": "info", "timestamp": "2026-08-09T05:56:21.706525Z"}
+{"event": "Waiting for application shutdown.", "level": "info", "timestamp": "2026-08-09T05:56:21.825863Z"}
+{"app_name": "atlaskb-api", "event": "api.shutdown", "level": "info", "timestamp": "2026-08-09T05:56:21.847099Z"}
+{"event": "Application shutdown complete.", "level": "info", "timestamp": "2026-08-09T05:56:21.849844Z"}
+{"event": "Finished server process [70435]", "level": "info", "timestamp": "2026-08-09T05:56:21.852264Z"}

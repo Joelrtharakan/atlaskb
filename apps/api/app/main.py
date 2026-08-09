@@ -15,6 +15,7 @@ from app.routers import (
     auth,
     chat,
     conversations,
+    dashboard,
     documents,
     invites,
     search,
@@ -112,6 +113,7 @@ app.include_router(invites.router)
 app.include_router(apikeys.router)
 app.include_router(admin.router)
 app.include_router(documents.router)
+app.include_router(dashboard.router)
 app.include_router(conversations.router)
 app.include_router(search.router)
 app.include_router(chat.router)

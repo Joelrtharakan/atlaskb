@@ -2,18 +2,25 @@
 
 import { useEffect, useState } from "react";
 
+import { motionDisabled, subscribeMotion } from "@/lib/motion";
+
 /**
- * Tracks `prefers-reduced-motion`. When true, the Living Atlas holds still
- * instead of rotating — motion earns meaning by scarcity.
+ * Tracks `prefers-reduced-motion` OR the user's explicit "freeze motion"
+ * preference (set in Settings). When true, the atlas holds still instead of
+ * rotating — motion earns meaning by scarcity.
  */
 export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const compute = () => setReduced(mq.matches || motionDisabled());
+    compute();
+    mq.addEventListener("change", compute);
+    const unsub = subscribeMotion(compute);
+    return () => {
+      mq.removeEventListener("change", compute);
+      unsub();
+    };
   }, []);
   return reduced;
 }

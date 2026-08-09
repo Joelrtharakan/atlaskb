@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -9,6 +10,10 @@ import { ApiError, api } from "@/lib/api";
 import { formatScore } from "@/lib/format";
 import type { SearchResponse } from "@/lib/types";
 
+const SearchSweep = dynamic(() => import("./SearchSweep").then((m) => m.SearchSweep), {
+  ssr: false,
+});
+
 // Raw hybrid retrieval, exposed for demoing quality independent of generation.
 // Scores are system facts → mono, tabular. No generation, no citations here.
 export function SearchView() {
@@ -16,6 +21,8 @@ export function SearchView() {
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // Bumped on each search so the sweep component remounts and replays.
+  const [sweepKey, setSweepKey] = useState(0);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -25,6 +32,7 @@ export function SearchView() {
     setError(null);
     try {
       setResults(await api.search(q, 10));
+      setSweepKey((k) => k + 1);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -78,6 +86,16 @@ export function SearchView() {
         <p role="alert" className="border border-ink bg-ink/5 px-3 py-2 text-sm text-ink">
           {error}
         </p>
+      ) : null}
+
+      {results && results.results.length > 0 ? (
+        <div
+          key={sweepKey}
+          className="h-[180px] w-full overflow-hidden rounded-lg border border-graphite/20 bg-ink/[0.03]"
+          aria-hidden
+        >
+          <SearchSweep results={results.results} />
+        </div>
       ) : null}
 
       <div className="min-h-0 flex-1">

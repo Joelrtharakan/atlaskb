@@ -49,12 +49,75 @@ class DocumentOut(BaseModel):
     error: str | None = None
     created_at: datetime
     updated_at: datetime
+    # Freshness signal (display only): when a human last confirmed the doc, and a
+    # 0..1 staleness derived from its age. Populated from the ORM property.
+    last_verified_at: datetime | None = None
+    staleness: float = 0.0
 
 
 class DocumentDetail(DocumentOut):
     chunk_count: int
-    # Whether the caller may edit this document's access scope.
-    can_manage_access: bool = False
+
+
+class ChunkSample(BaseModel):
+    """One chunk as a stratum of the Core Sample: length drives layer thickness,
+    confidence (embedding centrality) + doc staleness drive its color."""
+
+    chunk_id: str
+    chunk_index: int
+    length: int
+    page_num: int | None = None
+    section: str | None = None
+    preview: str
+    confidence: float
+    staleness: float
+
+
+class ChunkSamplesResponse(BaseModel):
+    document_id: str
+    filename: str
+    layers: list[ChunkSample]
+
+
+class ReliefCell(BaseModel):
+    """One document as a cell of the Dashboard relief map. `mass` (chunk count)
+    drives peak height; `staleness` pulls it down into a valley."""
+
+    id: str
+    filename: str
+    status: str
+    mass: int
+    staleness: float
+
+
+class ReliefSummary(BaseModel):
+    cells: list[ReliefCell]
+
+
+class ContentGap(BaseModel):
+    """An unanswered-question cluster → one fog patch on the Fog-of-War map."""
+
+    key: str
+    query: str
+    count: int
+    x: float
+    y: float
+    radius: float
+    resolved: bool
+    members: list[str] = []
+
+
+class ContentGapsResponse(BaseModel):
+    gaps: list[ContentGap]
+
+
+class QueryVolumePoint(BaseModel):
+    date: str
+    count: int
+
+
+class QueryVolumeResponse(BaseModel):
+    points: list[QueryVolumePoint]
 
 
 # --- Search ---

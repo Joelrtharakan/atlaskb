@@ -8,6 +8,7 @@ same rules for direct-by-id access and for who may *manage* access.
 from __future__ import annotations
 
 import shutil
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -33,6 +34,8 @@ from app.models import (
 from app.rbac import Principal, can_read_document, document_visible_clause, role_at_least
 from app.schemas import (
     AccessGrant,
+    ChunkSample,
+    ChunkSamplesResponse,
     DocumentAccessOut,
     DocumentAccessUpdate,
     DocumentDetail,
@@ -155,9 +158,96 @@ def get_document(
         error=doc.error,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
+        last_verified_at=doc.last_verified_at,
+        staleness=doc.staleness,
         chunk_count=chunk_count or 0,
         can_manage_access=_can_manage(doc, principal),
     )
+
+
+@router.post("/{document_id}/verify", response_model=DocumentDetail)
+def verify_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> DocumentDetail:
+    """Mark a document as freshly verified (resets its staleness to 0).
+
+    Manage-gated like access changes — the owner or a workspace admin/editor.
+    Display-only signal; does not touch chunks, retrieval, or ACL.
+    """
+    doc = _require_manage(db, document_id, principal)
+    doc.last_verified_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(doc)
+    chunk_count = db.scalar(
+        select(func.count()).select_from(Chunk).where(Chunk.document_id == doc.id)
+    )
+    return DocumentDetail(
+        id=doc.id,
+        filename=doc.filename,
+        content_type=doc.content_type,
+        status=doc.status,
+        source=doc.source,
+        error=doc.error,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+        last_verified_at=doc.last_verified_at,
+        staleness=doc.staleness,
+        chunk_count=chunk_count or 0,
+        can_manage_access=_can_manage(doc, principal),
+    )
+
+
+@router.get("/{document_id}/chunks", response_model=ChunkSamplesResponse)
+def document_chunks(
+    document_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> ChunkSamplesResponse:
+    """The document's chunks as Core-Sample strata.
+
+    ``confidence`` is each chunk's embedding centrality — cosine similarity to the
+    document's mean embedding — so representative chunks score high and
+    boilerplate/outliers low. Read-only, ACL-scoped via ``_load_document_or_404``.
+    """
+    doc = _load_document_or_404(db, document_id, principal)
+    rows = db.scalars(
+        select(Chunk).where(Chunk.document_id == doc.id).order_by(Chunk.chunk_index)
+    ).all()
+
+    # Mean embedding of the document, then per-chunk cosine to it (centrality).
+    vectors = [list(c.embedding) for c in rows if c.embedding is not None]
+    confidences: dict[str, float] = {}
+    if vectors:
+        import numpy as np
+
+        mat = np.asarray(vectors, dtype=float)
+        mean = mat.mean(axis=0)
+        mean_norm = np.linalg.norm(mean) or 1.0
+        for c in rows:
+            if c.embedding is None:
+                confidences[c.id] = 0.5
+                continue
+            v = np.asarray(list(c.embedding), dtype=float)
+            vn = np.linalg.norm(v) or 1.0
+            cos = float(np.dot(v, mean) / (vn * mean_norm))
+            confidences[c.id] = max(0.0, min(1.0, cos))
+
+    layers = [
+        ChunkSample(
+            chunk_id=c.id,
+            chunk_index=c.chunk_index,
+            length=len(c.text),
+            page_num=c.page_num,
+            section=c.section,
+            preview=c.text[:280],
+            confidence=confidences.get(c.id, 0.5),
+            staleness=doc.staleness,
+        )
+        for c in rows
+    ]
+    return ChunkSamplesResponse(document_id=doc.id, filename=doc.filename, layers=layers)
 
 
 def _require_manage(db: Session, document_id: str, principal: Principal) -> Document:
