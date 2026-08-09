@@ -103,6 +103,7 @@ def condense_query(history: list[dict], question: str) -> tuple[str, TokenUsage]
             model=settings.llm_model,
             temperature=0,
             messages=[
+                *_no_think_prefix(),
                 {"role": "system", "content": _CONDENSE_PROMPT},
                 {
                     "role": "user",
@@ -191,6 +192,7 @@ def assess_context(question: str, chunks: list[RetrievedChunk]) -> Assessment:
             temperature=0,
             response_format={"type": "json_object"},
             messages=[
+                *_no_think_prefix(),
                 {"role": "system", "content": _ASSESS_PROMPT},
                 {
                     "role": "user",
@@ -234,6 +236,19 @@ def _client():
         api_key=settings.openrouter_api_key,
         base_url=settings.openrouter_base_url,
     )
+
+
+def _no_think_prefix() -> list[dict]:
+    """Leading system message that disables Qwen3's chain-of-thought on Ollama.
+
+    Qwen3 defaults to emitting a long ``<think>`` reasoning trace, which on an 8B
+    local model routinely exceeds client timeouts (observed >180s for a single
+    query rewrite). ``/no_think`` is Qwen3's documented soft switch; placed as the
+    first message it turns thinking off for the request. Grounding is unaffected —
+    the answer is still constrained to the retrieved context. Scoped to the Ollama
+    provider so hosted models are untouched.
+    """
+    return [{"role": "system", "content": "/no_think"}] if settings.llm_provider == "ollama" else []
 
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
@@ -310,7 +325,7 @@ def generate_answer(
     context = build_context(chunks)
     valid_ids = {c.chunk_id for c in chunks}
 
-    messages: list[dict] = [{"role": "system", "content": _SYSTEM_PROMPT}]
+    messages: list[dict] = [*_no_think_prefix(), {"role": "system", "content": _SYSTEM_PROMPT}]
     for m in (history or [])[-8:]:
         messages.append({"role": m["role"], "content": m["content"]})
     messages.append(

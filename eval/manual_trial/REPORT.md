@@ -13,23 +13,27 @@ Verdicts: **pass / partial / fail / manual** (nuance flagged for human review) /
 
 ## Summary table (pass rate by root-cause layer)
 
-| Layer | Before | After | Notes |
-|---|---|---|---|
-| Retrieval | 17/17 | 17/17 | Hybrid RRF handles tokens, semantics, typos, and absent-query low-scoring. No change needed. |
-| Access control | 0/2 search (+chat blocked) | **2/2 search** (chat pending) | Restricted doc leaked to non-admins; fixed with an admin-only grant. Verified via `/search`. |
-| Agent / orchestration | 13 pass, **1 hard fail (A2)**, 2 manual, 1 blocked | pending LLM | Conversation memory not passed to agent; implemented + unit-tested. |
-| Generation / grounding | 1/1 (false-premise declined) | pending LLM | Strict grounding already refuses; prompt improved to *correct* the premise. |
-| Ingestion (tables) | mostly OK (blocked in before) | pending LLM | `pypdf` flattens tables to inline text but preserves values in order. |
-| Ingestion (charts) | — | — | **Known limitation:** chart-image-only facts (e.g. % vested at 2 yrs) — no OCR/vision. |
-| Chunking | (blocked in before) | pending LLM | One artifact: the security access-matrix "Admin" row splits across a chunk boundary. |
+Verdict counts (per `harness.py`, judged item granularity, N=57):
 
-> The full **chat + PDF AFTER re-run was blocked on the OpenRouter free-tier daily
-> cap** (50 req/day, exhausted mid-run). To remove the quota dependency entirely,
-> the LLM provider has been migrated to a **local Ollama daemon running
-> `qwen3:8b`** (see [LLM provider](#llm-provider-openrouter--ollama)). Retrieval
-> and access-control fixes are already proven without the LLM (54/54 unit tests).
-> The AFTER chat/PDF pass runs against Ollama; results are recorded only once that
-> pass has actually executed locally — no numbers are carried over from OpenRouter.
+| Layer | Before (OpenRouter) | After (Ollama `qwen3:8b`) | Notes |
+|---|---|---|---|
+| Retrieval | 17/19 (2 blocked) | **19/19** | Hybrid RRF handles tokens, semantics, typos, and absent-query low-scoring. No change needed. |
+| Access control | 0/6 (4 blocked) | **6/6** | Restricted doc leaked to non-admins; fixed with an admin-only grant. Search leak fix is LLM-independent. |
+| Agent / orchestration | 13/17 (1 blocked) | **14/17** (+3 manual) | Conversation memory now passed to agent (A2 `fail→pass`, LLM-independent of provider). |
+| Generation / grounding | 1/1 (false-premise declined) | **1/1** | Strict grounding refuses; prompt also *corrects* the premise. |
+| Ingestion (tables/charts) | 0/10 (10 blocked) | **10/10** | `pypdf` flattens tables to inline text but preserves values in order; chart-derived facts declined, not fabricated. |
+| Chunking | 0/4 (4 blocked) | **4/4** | Split access-matrix row still answerable. |
+| **Overall** | **31 pass / 3 fail / 2 manual / 21 blocked** | **54 pass / 0 fail / 3 manual / 0 blocked** | Full LLM-dependent suite completed locally with **zero quota blocks**. |
+
+> **The full chat + PDF evaluation now completes end-to-end locally** against a
+> **local Ollama daemon running `qwen3:8b`** — **0 blocked** (previously 21 were
+> blocked by the OpenRouter 50-req/day cap). Numbers above are the actual harness
+> verdicts from `results/after.json` (full per-question diff in
+> `AFTER_COMPARISON.md`). See [comparability](#before-vs-after-comparability): the
+> BEFORE column is the OpenRouter partial run, so most `blocked→pass` deltas
+> reflect **quota removal**, not code fixes; the genuinely LLM-independent code
+> fixes are the ACL search leak (`s_acl_*` `fail→pass`) and conversation memory
+> (`A2` `fail→pass`).
 
 ---
 
@@ -105,13 +109,22 @@ Verdicts: **pass / partial / fail / manual** (nuance flagged for human review) /
   `http://127.0.0.1:11434/v1` (loopback only — port 11434 is never published
   publicly, nor via nginx/Cloudflare/Docker; from a container it is reached over
   `host.docker.internal`).
-- **Model:** `qwen3:8b`. **Temperature:** `0` (unchanged from the OpenRouter
-  config). **System/condense/assess prompts:** unchanged. **Response format:**
-  `json_object`; a tolerant parser strips Qwen's `<think>…</think>` reasoning
-  before JSON decoding.
+- **Model:** `qwen3:8b` (Q4_K_M, 8.2B, digest `500a1f067a9f`). **Temperature:**
+  `0` (unchanged from the OpenRouter config). **System/condense/assess prompts:**
+  unchanged. **Response format:** `json_object`; a tolerant parser strips Qwen's
+  `<think>…</think>` reasoning before JSON decoding.
+- **Thinking disabled:** Qwen3 defaults to a long chain-of-thought that on an 8B
+  local model exceeded the harness's 180 s client timeout for a single
+  query-rewrite (observed >180 s). A leading `/no_think` system message (Qwen3's
+  documented soft switch, scoped to the Ollama provider) disables it — condense
+  drops from >180 s to ~14 s. Grounding is unaffected (answers stay constrained to
+  retrieved context).
+- **Stability:** `OLLAMA_KEEP_ALIVE=30m` pins the model resident so it is not
+  evicted mid-run (an eviction/reload race caused the first run to time out).
 - **Why Ollama:** the OpenRouter free tier caps at **50 requests/day**, which the
-  ~39 LLM-dependent questions (multiple LLM calls each) exhaust mid-run. A local
-  model removes the quota, keeps data on-device, and introduces **no paid API**.
+  **38 LLM-dependent questions** (21 chat + 17 pdf, multiple LLM calls each)
+  exhaust mid-run (42 `/chat` calls this run alone). A local model removes the
+  quota, keeps data on-device, and introduces **no paid API**.
 - **Selection:** `LLM_PROVIDER=ollama` (default) or `openrouter` (kept as an
   optional fallback — no OpenRouter code was deleted). One OpenAI-compatible
   client serves both; no new dependency.
@@ -121,22 +134,41 @@ Verdicts: **pass / partial / fail / manual** (nuance flagged for human review) /
 
 ### BEFORE vs AFTER comparability
 
-- The OpenRouter BEFORE run **did not complete** the LLM-dependent questions (it
-  was blocked by the 429 daily cap), so there is **no valid OpenRouter baseline**
-  to compare against. Any code-fix improvement must therefore be shown with a
-  **controlled BEFORE/AFTER using the same `qwen3:8b` configuration** — same
-  model/version, temperature, prompts, retrieval config, questions, and judging.
-- Do **not** attribute a Qwen-AFTER vs OpenRouter-BEFORE delta to the code fixes;
-  the provider change alone would confound it.
+- The `AFTER_COMPARISON.md` table pits the **OpenRouter BEFORE** (which did *not*
+  complete — 21/57 items blocked by the 429 daily cap) against the **Ollama
+  AFTER**. **This comparison is confounded by the provider/quota change:** most
+  `blocked→pass` deltas mean "the question could finally run at all", **not** that
+  a code fix improved quality. Do **not** read the headline 31→54 as a pure
+  code-fix gain.
+- **What *is* attributable to the code fixes** (both LLM-independent, so provider
+  cannot confound them): the ACL search leak — `s_acl_salary`/`s_acl_severance`
+  `fail→pass` via `/search` (no LLM) — and conversation memory — `A2`
+  ("has that changed recently?") `fail→pass`, which failed on OpenRouter too
+  because history was never passed to the agent.
+- A clean, non-confounded quality baseline would require a Qwen `qwen3:8b`
+  BEFORE run on the **pre-fix** code. That was **not** produced here: reverting the
+  conversation-memory/ACL logic is explicitly out of scope (frozen, 54/54 tests).
+  The AFTER config (model/version, temperature 0, prompts, `/no_think`, retrieval,
+  questions, judging) is fully recorded above so such a baseline is reproducible.
 
-### Verification status
+### Verification status — completed locally
 
 - **Unit/integration tests: 54/54 pass** (LLM-independent; retrieval 5, ACL/
   workspace-access 11, agent 6, cache 4, integration 8, chunking 7, others).
-- **Live Ollama chat/PDF/eval pass:** to be run on a host with Ollama installed
-  and `qwen3:8b` pulled (Ollama was not available in the implementation
-  environment). Numbers will be filled in from the actual run only — none are
-  fabricated here.
+- **Live Ollama eval: completed.** `harness.py --phase after` ran the full suite
+  against `qwen3:8b` on a local Ollama daemon. **38 LLM-dependent questions**
+  (21 chat + 17 pdf) over **42 `/chat` requests**; **0 blocked**. Per-`/chat`
+  latency: median **~33 s**, max **~116 s** (under the harness's 180 s timeout);
+  ~26.5 min total. Results in `results/after.json`, diff in `AFTER_COMPARISON.md`.
+- **Manual (3):** self-referential/citation-drill-down items flagged for human
+  confirmation (e.g. G8) — not failures.
+- **Latency note:** Qwen3 thinking is disabled for these calls (leading
+  `/no_think`) so a single 8B generation stays within client timeouts; the model
+  is pinned resident via `OLLAMA_KEEP_ALIVE=30m`.
+- **Spot checks:** basic RAG (ISO/TS 15066, cited), multi-turn + follow-up needing
+  history (A2 PTO update), role-based auth, restricted-doc refusal
+  (`p_leak_exists`/`p_viewer_restricted`), and semantic cache hit (`cached:true`,
+  0 tokens on repeat) all verified.
 
 ## Known limitations (intentionally not hacked)
 
