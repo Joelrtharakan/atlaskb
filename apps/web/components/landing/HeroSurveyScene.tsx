@@ -19,12 +19,14 @@ interface Peak {
   amp: number;
   w: number;
   active: boolean;
-  label?: string;
+  /** Invented but plausible metres, kept consistent with `amp` (taller bump →
+   *  higher reading) so the numbers don't contradict the terrain shape. */
+  elevation?: number;
 }
 const PEAKS: Peak[] = [
-  { u: 0.4, v: 0.52, amp: 0.8, w: 0.12, active: true, label: "security_and_data_policy.pdf" },
-  { u: 0.58, v: 0.36, amp: 0.66, w: 0.1, active: true, label: "q3_2024_allhands_notes.pdf" },
-  { u: 0.7, v: 0.6, amp: 0.58, w: 0.095, active: true, label: "falcon_product_spec.pdf" },
+  { u: 0.4, v: 0.52, amp: 0.8, w: 0.12, active: true, elevation: 2140 },
+  { u: 0.58, v: 0.36, amp: 0.66, w: 0.1, active: true, elevation: 1860 },
+  { u: 0.7, v: 0.6, amp: 0.58, w: 0.095, active: true, elevation: 1690 },
   { u: 0.26, v: 0.32, amp: 0.42, w: 0.13, active: false },
   { u: 0.5, v: 0.72, amp: 0.34, w: 0.12, active: false },
   { u: 0.86, v: 0.28, amp: 0.3, w: 0.1, active: false },
@@ -162,7 +164,18 @@ function world(u: number, v: number, lift = 0): [number, number, number] {
   return [(u - 0.5) * S, heightAt(u, v) * R + lift, (v - 0.5) * S];
 }
 
-function Terrain() {
+interface LanternState {
+  active: boolean;
+  point: THREE.Vector3;
+}
+
+function Terrain({
+  reduced,
+  lantern,
+}: {
+  reduced: boolean;
+  lantern: { current: LanternState };
+}) {
   const { geometry, material } = useMemo(() => {
     const seg = 82;
     const geo = new THREE.PlaneGeometry(S, S, seg, seg);
@@ -234,7 +247,53 @@ function Terrain() {
     };
     return { geometry: geo, material: mat };
   }, []);
-  return <mesh geometry={geometry} material={material} receiveShadow />;
+  return (
+    <mesh
+      geometry={geometry}
+      material={material}
+      receiveShadow
+      onPointerMove={(e) => {
+        if (reduced) return;
+        lantern.current.active = true;
+        lantern.current.point.copy((e.object as THREE.Mesh).worldToLocal(e.point.clone()));
+      }}
+      onPointerOut={() => {
+        lantern.current.active = false;
+      }}
+    />
+  );
+}
+
+/** Soft warm point light that follows the cursor while it's over the terrain
+ *  — a lantern in the dark, not a spotlight, so radius/brightness stay
+ *  modest. Position arrives in the terrain's local space (see Terrain's
+ *  onPointerMove) so it lines up correctly under the same parallax group. */
+function CursorLantern({
+  reduced,
+  lantern,
+}: {
+  reduced: boolean;
+  lantern: { current: LanternState };
+}) {
+  const light = useRef<THREE.PointLight>(null);
+  const level = useRef(0);
+  const target = useMemo(() => new THREE.Vector3(), []);
+  useFrame(() => {
+    if (!light.current) return;
+    if (reduced) {
+      light.current.intensity = 0;
+      return;
+    }
+    const want = lantern.current.active ? 1 : 0;
+    level.current += (want - level.current) * 0.12;
+    light.current.intensity = level.current * 1.1;
+    if (level.current > 0.01) {
+      target.copy(lantern.current.point);
+      target.y += 0.3;
+      light.current.position.lerp(target, 0.3);
+    }
+  });
+  return <pointLight ref={light} color="#E8B673" distance={2.4} decay={2} intensity={0} />;
 }
 
 function QueryPoint({ reduced, runtime }: { reduced: boolean; runtime: SceneRuntime }) {
@@ -439,7 +498,6 @@ function Flag({
   const light = useRef<THREE.PointLight>(null);
   const ringA = useRef<THREE.Mesh>(null);
   const ringB = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
   const summit = useMemo(() => world(peak.u, peak.v, 0), [peak]);
   const poleH = 0.95;
   const clothLow = 0.14; // cloth starts at the foot of the pole…
@@ -495,24 +553,16 @@ function Flag({
           <meshStandardMaterial color="#C08A45" metalness={0.6} roughness={0.35} emissive="#5a3d17" emissiveIntensity={0.4} />
         </mesh>
         <group ref={cloth} position={[0, clothLow, 0]}>
-          <mesh
-            position={[0.26, 0, 0]}
-            castShadow
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setHovered(true);
-            }}
-            onPointerOut={() => setHovered(false)}
-          >
+          <mesh position={[0.26, 0, 0]} castShadow>
             <planeGeometry args={[0.5, 0.3, 14, 4]} />
             <shaderMaterial ref={flagMat} vertexShader={flagVert} fragmentShader={flagFrag} uniforms={uniforms} side={THREE.DoubleSide} />
           </mesh>
         </group>
-        {/* filename only on hover — not a permanent label, not a link */}
-        {hovered && (
-          <Html position={[0, poleH + 0.28, 0]} center distanceFactor={9} zIndexRange={[6, 0]}>
-            <div className="pointer-events-none whitespace-nowrap rounded-sm bg-chart-navy/85 px-1.5 py-0.5 font-mono text-[10px] text-parchment">
-              {peak.label}
+        {/* Elevation reading — always present, low-key mono type. */}
+        {peak.elevation !== undefined && (
+          <Html position={[-0.02, poleH + 0.06, 0]} center distanceFactor={9} zIndexRange={[4, 0]}>
+            <div className="pointer-events-none -translate-x-full whitespace-nowrap pr-1.5 font-mono text-[9px] text-brass/60">
+              {peak.elevation.toLocaleString()}m
             </div>
           </Html>
         )}
@@ -608,6 +658,49 @@ function CameraDrift({ reduced }: { reduced: boolean }) {
     camera.lookAt(look);
   });
   return null;
+}
+
+/** Linear top-to-bottom alpha fade, used to fake a foreground focal-plane
+ *  falloff without a real postprocessing/bokeh pass (none is installed in
+ *  this project — see heroTimeline.ts's note on staying dependency-light). */
+function buildLinearFadeTexture(): THREE.Texture {
+  const w = 8;
+  const h = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  const grad = ctx.createLinearGradient(0, h, 0, 0);
+  grad.addColorStop(0, "rgba(0,0,0,1)");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/** Approximate foreground depth-of-field: a soft haze over the terrain's
+ *  near-left edge (closest to camera), pairing with the Tier-1 atmospheric
+ *  depth gradient so both read as one focal-falloff system rather than two.
+ *  Not true lens blur — that would need a bokeh/postprocessing pass, which
+ *  isn't worth the new dependency for this one effect. */
+function ForegroundHaze() {
+  const texture = useMemo(buildLinearFadeTexture, []);
+  return (
+    <mesh position={[-2.5, 0.42, 3.9]} rotation={[-Math.PI / 2.5, 0, 0.3]}>
+      <planeGeometry args={[4.4, 2.2]} />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        opacity={0.2}
+        color="#0F1A24"
+        depthWrite={false}
+        toneMapped={false}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
 }
 
 /** Sparse dust catching the key light above the ridge. One draw call. */
@@ -727,14 +820,21 @@ function buildGraticuleGeometry() {
   geo.setAttribute("position", new THREE.Float32BufferAttribute(lines, 3));
   return geo;
 }
-function Graticule() {
+function Graticule({ reduced }: { reduced: boolean }) {
   const geometry = useMemo(buildGraticuleGeometry, []);
+  const mat = useRef<THREE.LineBasicMaterial>(null);
+  useFrame((state) => {
+    if (reduced || !mat.current) return;
+    // Idle shimmer, not movement: opacity only, well under the range that
+    // would read as flicker.
+    mat.current.opacity = 0.06 + Math.sin(state.clock.elapsedTime * 0.22) * 0.018;
+  });
   return (
     // Deliberately not `fog`-affected — at this depth the exp2 fog would
     // crush the already-low opacity to nothing, defeating the "barely
     // visible" effect rather than achieving it.
     <lineSegments geometry={geometry} position={[0, 3, -8]}>
-      <lineBasicMaterial color="#C08A45" transparent opacity={0.06} toneMapped={false} />
+      <lineBasicMaterial ref={mat} color="#C08A45" transparent opacity={0.06} toneMapped={false} />
     </lineSegments>
   );
 }
@@ -764,37 +864,125 @@ function GroundMist({ reduced }: { reduced: boolean }) {
   );
 }
 
+/** Soft radial-falloff alpha texture, built once on a canvas — used as the
+ *  drifting cloud shadow's opacity mask so it reads as a diffuse patch rather
+ *  than a hard-edged disc. */
+function buildSoftCircleTexture(): THREE.Texture {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, "rgba(0,0,0,1)");
+  grad.addColorStop(0.6, "rgba(0,0,0,0.5)");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/** A large, very soft, low-opacity shadow patch slowly drifting across the
+ *  terrain — independent of the ~22-32s pulse cycle so the two never read as
+ *  synchronised. The cheapest way to make flat-shaded terrain read as a lit
+ *  landscape under moving sky rather than a static render. */
+function CloudShadow({ reduced }: { reduced: boolean }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const texture = useMemo(buildSoftCircleTexture, []);
+  useFrame((state) => {
+    if (reduced || !ref.current) return;
+    const t = state.clock.elapsedTime;
+    ref.current.position.x = Math.sin(t * (2 * Math.PI) / 26) * 3.2;
+    ref.current.position.z = Math.cos(t * (2 * Math.PI) / 34 + 1.1) * 2.4 - 0.5;
+  });
+  return (
+    <mesh ref={ref} position={[0, 1.15, -0.5]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[5.5, 5.5]} />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        opacity={0.16}
+        color="#0B1620"
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
+
+const starVert = /* glsl */ `
+  attribute float aPhase;
+  uniform float uTime;
+  uniform float uTwinkle;
+  varying float vAlpha;
+  void main() {
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = 5.5 * (24.0 / -mvPosition.z);
+    gl_Position = projectionMatrix * mvPosition;
+    float wave = 0.5 + 0.5 * sin(uTime * (0.5 + aPhase * 0.35) + aPhase * 6.2831);
+    vAlpha = mix(1.0, 0.35 + 0.65 * wave, uTwinkle);
+  }
+`;
+const starFrag = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying float vAlpha;
+  void main() {
+    float d = length(gl_PointCoord - vec2(0.5));
+    if (d > 0.5) discard;
+    float falloff = 1.0 - smoothstep(0.0, 0.5, d);
+    gl_FragColor = vec4(uColor, uOpacity * vAlpha * falloff);
+  }
+`;
+
 /** Sparse, dim points high in the background — a faint sextant-navigation
- *  field, drifting independently and very slowly. */
+ *  field, drifting independently and very slowly, each star twinkling on its
+ *  own staggered phase (reduced-motion: static, no twinkle). */
 function CelestialField({ reduced }: { reduced: boolean }) {
   const ref = useRef<THREE.Points>(null);
-  const geometry = useMemo(() => {
+  const mat = useRef<THREE.ShaderMaterial>(null);
+  const { geometry, uniforms } = useMemo(() => {
     const n = 90;
-    const arr = new Float32Array(n * 3);
+    const pos = new Float32Array(n * 3);
+    const phase = new Float32Array(n);
     for (let i = 0; i < n; i++) {
       const a = hash2(i * 3.3, 7.1) * Math.PI * 2;
       const r = 14 + hash2(i * 5.7, 2.2) * 10;
-      arr[i * 3] = Math.cos(a) * r;
-      arr[i * 3 + 1] = 4 + hash2(i * 1.9, 9.4) * 6;
-      arr[i * 3 + 2] = -8 - hash2(i * 8.1, 4.6) * 14;
+      pos[i * 3] = Math.cos(a) * r;
+      pos[i * 3 + 1] = 4 + hash2(i * 1.9, 9.4) * 6;
+      pos[i * 3 + 2] = -8 - hash2(i * 8.1, 4.6) * 14;
+      phase[i] = hash2(i * 6.1, 4.9);
     }
     const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(arr, 3));
-    return g;
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+    return {
+      geometry: g,
+      uniforms: {
+        uTime: { value: 0 },
+        uTwinkle: { value: reduced ? 0 : 1 },
+        uColor: { value: new THREE.Color("#8FA6B8") },
+        uOpacity: { value: 0.35 },
+      },
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useFrame((state) => {
+    if (mat.current) mat.current.uniforms.uTime.value = state.clock.elapsedTime;
     if (reduced || !ref.current) return;
     ref.current.rotation.y = state.clock.elapsedTime * 0.003;
   });
   return (
     <points ref={ref} geometry={geometry}>
-      <pointsMaterial
-        size={0.02}
-        color="#8FA6B8"
+      <shaderMaterial
+        ref={mat}
+        vertexShader={starVert}
+        fragmentShader={starFrag}
+        uniforms={uniforms}
         transparent
-        opacity={0.35}
         depthWrite={false}
-        sizeAttenuation
         toneMapped={false}
       />
     </points>
@@ -837,6 +1025,7 @@ function SurveyFlare({ reduced, runtime }: { reduced: boolean; runtime: SceneRun
 }
 
 function Scene({ reduced, runtime }: { reduced: boolean; runtime: SceneRuntime }) {
+  const lantern = useRef<LanternState>({ active: false, point: new THREE.Vector3() });
   return (
     <>
       <fogExp2 attach="fog" args={["#0F1A24", 0.058]} />
@@ -845,18 +1034,21 @@ function Scene({ reduced, runtime }: { reduced: boolean; runtime: SceneRuntime }
       <CameraDrift reduced={reduced} />
       <CelestialField reduced={reduced} />
       <RidgelineSilhouettes reduced={reduced} />
-      <Graticule />
+      <Graticule reduced={reduced} />
       <GroundMist reduced={reduced} />
       <SurveyFlare reduced={reduced} runtime={runtime} />
       <ParallaxGroup reduced={reduced}>
         <group position={[0, -0.6, 0]}>
-          <Terrain />
+          <Terrain reduced={reduced} lantern={lantern} />
+          <CursorLantern reduced={reduced} lantern={lantern} />
           <QueryPoint reduced={reduced} runtime={runtime} />
           <SurveyRoute reduced={reduced} runtime={runtime} />
           {targets.map((p, i) => (
             <Flag key={i} peak={p} index={i} reduced={reduced} runtime={runtime} />
           ))}
           <DustMotes reduced={reduced} />
+          <CloudShadow reduced={reduced} />
+          <ForegroundHaze />
         </group>
       </ParallaxGroup>
     </>
@@ -886,6 +1078,38 @@ function SurveyFallback() {
         </g>
       ))}
     </svg>
+  );
+}
+
+/** First-paint load transition: a few organic ink-bleed blots spread across
+ *  the dark void and merge, revealing the terrain underneath rather than a
+ *  plain fade — "the map being drawn as the visitor arrives". Pure CSS, one
+ *  shot, `animation-fill-mode: both` so it needs no JS scheduling or cleanup;
+ *  the global reduced-motion rule in globals.css zeroes its duration, and the
+ *  fully-revealed end state is what's left when that happens. Works for both
+ *  the WebGL scene and the 2D fallback since it's a sibling overlay, not part
+ *  of either. */
+function InkBleedIntro() {
+  return (
+    <div className="ink-bleed pointer-events-none absolute inset-0 z-10" aria-hidden>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
+        <defs>
+          <filter id="ink-bleed-rough" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.014 0.02" numOctaves={2} seed={7} result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale={16} />
+          </filter>
+          <mask id="ink-bleed-mask" maskContentUnits="userSpaceOnUse">
+            <rect x="0" y="0" width="100" height="100" fill="white" />
+            <g filter="url(#ink-bleed-rough)">
+              <circle className="ink-blot" style={{ animationDelay: "0s" }} cx="22" cy="72" r="0" fill="black" />
+              <circle className="ink-blot" style={{ animationDelay: "0.12s" }} cx="52" cy="42" r="0" fill="black" />
+              <circle className="ink-blot" style={{ animationDelay: "0.24s" }} cx="76" cy="55" r="0" fill="black" />
+            </g>
+          </mask>
+        </defs>
+        <rect x="0" y="0" width="100" height="100" fill="#0F1A24" mask="url(#ink-bleed-mask)" />
+      </svg>
+    </div>
   );
 }
 
@@ -940,7 +1164,7 @@ export function HeroSurveyScene() {
   const useFallback = narrow || lowPower || !webgl;
 
   return (
-    <div ref={hostRef} className="h-full w-full">
+    <div ref={hostRef} className="relative h-full w-full">
       {useFallback ? (
         <div className="flex h-full items-center justify-center p-4">
           <SurveyFallback />
@@ -958,6 +1182,7 @@ export function HeroSurveyScene() {
           <Scene reduced={reducedMotion} runtime={runtimeRef.current} />
         </Canvas>
       )}
+      <InkBleedIntro />
     </div>
   );
 }

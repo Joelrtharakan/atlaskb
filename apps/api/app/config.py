@@ -92,7 +92,7 @@ class Settings(BaseSettings):
         return self.ollama_model if self.llm_provider == "ollama" else self.openrouter_model
 
     # --- Retrieval ---
-    retrieval_top_k: int = 8
+    retrieval_top_k: int = 3
     rrf_k: int = 60
 
     # --- Freshness / staleness (display only) ---

@@ -76,8 +76,8 @@ export default function Home() {
 
         {/* Cartouche — the map's title block, anchored to the left margin.
             Top-aligned on mobile (terrain sits below it), centered on desktop. */}
-        <div className="relative z-10 flex flex-1 items-start pt-[6vh] lg:items-center lg:pt-0">
-          <div className="max-w-md px-6 sm:px-10">
+        <div className="pointer-events-none relative z-10 flex flex-1 items-start pt-[6vh] lg:items-center lg:pt-0">
+          <div className="pointer-events-auto max-w-md px-6 sm:px-10">
             <p className="marginalia mb-4 text-[0.7rem] uppercase tracking-cartouche text-brass">
               Multi-tenant agentic RAG
             </p>

@@ -172,7 +172,7 @@ export function ChatView() {
     // /search returns retrieval-only results fast (no LLM) → drive the camera and
     // threads as soon as retrieval is known, before the answer is generated.
     api
-      .search(text, 8)
+      .search(text, 3)
       .then((res) => {
         if (reqId.current !== id) return;
         setAtlas((a) => ({ ...a, activeIds: uniq(res.results.map((c) => c.document_id)) }));
@@ -180,7 +180,7 @@ export function ChatView() {
       .catch(() => {});
 
     try {
-      const resp = await api.chat(text, 8);
+      const resp = await api.chat(text, 3);
       const docByChunk = new Map(resp.retrieved.map((c) => [c.chunk_id, c.document_id] as const));
       const retrievedDocs = uniq(resp.retrieved.map((c) => c.document_id));
       const citedDocs = uniq(

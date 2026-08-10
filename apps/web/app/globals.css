@@ -267,6 +267,33 @@
   animation: atlas-fade-in 0.4s ease-out both;
 }
 
+/* Hero load transition: a few organic blots grow (revealing the terrain
+   through an SVG mask — see InkBleedIntro), then the whole cover fades so any
+   leftover seam disappears. Fill-mode "both" holds the end state (opacity 0)
+   with no JS cleanup needed. */
+@keyframes ink-blot-grow {
+  from {
+    r: 0;
+  }
+  to {
+    r: 82;
+  }
+}
+.ink-blot {
+  animation: ink-blot-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ink-bleed-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.ink-bleed {
+  animation: ink-bleed-fade 0.5s ease-in 1s both;
+}
+
 /* Motion is a reserved signal — honor reduced-motion everywhere. */
 @media (prefers-reduced-motion: reduce) {
   *,
