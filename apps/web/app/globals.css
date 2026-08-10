@@ -294,6 +294,50 @@
   animation: ink-bleed-fade 0.5s ease-in 1s both;
 }
 
+/* /how-it-works section reveal — same entrance family as .page-enter
+   (cubic-bezier(0.16,1,0.3,1), the curve Refero's DESIGN.md library also
+   flags as the standard scroll-reveal entrance ease), just slower and with
+   more travel distance since these are full sections, not small UI. */
+.hiw-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hiw-reveal-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Modal: quick fade + settle-in for the backdrop and panel separately (the
+   panel gets a touch of scale so it reads as arriving, not just appearing;
+   the backdrop is opacity-only so it doesn't compete). */
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.modal-backdrop-in {
+  animation: modal-backdrop-in 0.2s ease-out both;
+}
+@keyframes modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.modal-panel-in {
+  animation: modal-panel-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Motion is a reserved signal — honor reduced-motion everywhere. */
 @media (prefers-reduced-motion: reduce) {
   *,

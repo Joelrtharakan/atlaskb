@@ -26,6 +26,11 @@ export function clearTokens(): void {
   window.localStorage.removeItem(ACCESS_KEY);
   window.localStorage.removeItem(REFRESH_KEY);
   window.localStorage.removeItem(WORKSPACE_KEY);
+  // Tells AuthProvider its in-memory `isAuthenticated` is now stale — this
+  // fires from api.ts too (a failed silent refresh on a 401), not just from
+  // an explicit logout() call, so the React auth state can't just clear
+  // itself inline the way logout() does.
+  window.dispatchEvent(new Event("atlaskb-auth-cleared"));
 }
 
 /** The active workspace id, sent as X-Workspace-Id on scoped requests. */

@@ -1,6 +1,9 @@
+import shutil
+import subprocess
 import time
 import uuid
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 
 import structlog
 from fastapi import FastAPI, Request
@@ -8,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.config import settings
+from app.llm import ollama_health
 from app.logging_config import configure_logging, get_logger
 from app.routers import (
     admin,
@@ -52,9 +56,50 @@ def _require_runtime_secrets() -> None:
         )
 
 
+def _ensure_ollama_running() -> None:
+    """Local dev convenience: when the API is run directly on the host (``uv
+    run uvicorn ...``) with the default Ollama provider, start the Ollama
+    server automatically if it isn't already up — so ``/chat`` works without a
+    separate manual ``ollama serve`` step.
+
+    Skipped for the Docker path: there ``OLLAMA_BASE_URL`` points at
+    ``host.docker.internal`` (see docker-compose.yml), since Ollama runs on
+    the host and starting it is the host's job, not a container's. Also
+    skipped outright for any non-Ollama provider.
+    """
+    if settings.llm_provider != "ollama":
+        return
+    host = urlparse(settings.ollama_base_url).hostname
+    if host not in ("127.0.0.1", "localhost"):
+        return
+    if ollama_health()["reachable"]:
+        return
+    if shutil.which("ollama") is None:
+        log.warning(
+            "ollama.not_installed",
+            hint="install from https://ollama.com, or set LLM_PROVIDER=openrouter",
+        )
+        return
+    log.info("ollama.autostart", model=settings.ollama_model)
+    subprocess.Popen(
+        ["ollama", "serve"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    # Best-effort: give it a few seconds to bind before we start serving
+    # /chat traffic. If it's still not up, /health/llm just reports that —
+    # nothing here blocks the API from starting.
+    for _ in range(10):
+        time.sleep(0.5)
+        if ollama_health()["reachable"]:
+            break
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _require_runtime_secrets()
+    _ensure_ollama_running()
     log.info("api.startup", app_name=settings.app_name)
     yield
     log.info("api.shutdown", app_name=settings.app_name)

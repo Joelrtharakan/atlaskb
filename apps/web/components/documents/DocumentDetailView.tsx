@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -12,12 +11,8 @@ import type { ChunkSample, DocumentDetail } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace";
 
 import { AccessScopeControl } from "./AccessScopeControl";
+import { CoreSample } from "./CoreSample";
 import { SurveyGrid } from "./SurveyGrid";
-
-const CoreSample = dynamic(() => import("./CoreSample").then((m) => m.CoreSample), {
-  ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-ink/5" aria-hidden />,
-});
 
 const POLL_MS = 2000;
 
@@ -159,29 +154,39 @@ export function DocumentDetailView({ id }: { id: string }) {
                 Core sample
               </p>
               <p className="mt-1 text-sm text-graphite">
-                Each stratum is a chunk — thickness is its length, color its embedding centrality
-                (solid verdigris = representative, pale brass = outlier). Hover a layer to read it.
+                Each stratum is a chunk — height is its length, color its embedding centrality
+                (solid verdigris = representative, pale brass = outlier). Hover or click a layer to
+                read it; {layers.length} chunks in this core.
               </p>
-              <div data-testid="core-sample" className="mt-3 grid gap-4 sm:grid-cols-[1fr_1.1fr]">
-                <div className="h-[380px] overflow-hidden rounded-lg border border-graphite/25 bg-ink/[0.03]">
+              <div data-testid="core-sample" className="mt-3 grid gap-4 sm:grid-cols-[1fr_1.3fr]">
+                <div className="h-[420px] overflow-hidden rounded-lg border border-graphite/25 bg-ink/[0.03] p-2">
                   <CoreSample layers={layers} hoveredId={hovered} onHover={setHovered} />
                 </div>
                 <div className="rounded-lg border border-graphite/20 bg-linen/30 p-4">
                   {hoveredChunk ? (
                     <>
-                      <p className="font-mono text-[10px] uppercase tracking-cartouche text-graphite">
-                        Chunk #{hoveredChunk.chunk_index}
-                        {hoveredChunk.page_num != null ? ` · page ${hoveredChunk.page_num}` : ""}
-                        {` · ${Math.round(hoveredChunk.confidence * 100)}% central`}
-                      </p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-ink">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-sm bg-beacon/90 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-linen">
+                          CHUNK {hoveredChunk.chunk_index}
+                        </span>
+                        <span className="font-mono text-[10px] uppercase tracking-cartouche text-graphite">
+                          {hoveredChunk.page_num != null
+                            ? `page ${hoveredChunk.page_num}`
+                            : (hoveredChunk.section ?? "location unknown")}
+                          {` · ${Math.round(hoveredChunk.confidence * 100)}% central`}
+                        </span>
+                      </div>
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink">
                         {hoveredChunk.preview}
                         {hoveredChunk.length > hoveredChunk.preview.length ? "…" : ""}
+                      </p>
+                      <p className="marginalia mt-3 break-all text-[10px] text-graphite/70">
+                        {hoveredChunk.chunk_id}
                       </p>
                     </>
                   ) : (
                     <p className="text-sm text-graphite">
-                      Hover a stratum to read that chunk’s text. {layers.length} chunks in this core.
+                      Hover or click a stratum to read that chunk’s text.
                     </p>
                   )}
                 </div>

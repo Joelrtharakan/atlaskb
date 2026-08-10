@@ -193,6 +193,11 @@ export const api = {
     return request<DocumentDetail>(`/documents/${id}/verify`, { method: "POST" });
   },
 
+  /** Re-enqueue ingestion for a document stuck `processing` or `failed`. */
+  async retryDocument(id: string): Promise<DocumentDetail> {
+    return request<DocumentDetail>(`/documents/${id}/retry`, { method: "POST" });
+  },
+
   /** The document's chunks as Core-Sample strata (length + confidence + staleness). */
   async documentChunks(id: string): Promise<ChunkSamplesResponse> {
     return request<ChunkSamplesResponse>(`/documents/${id}/chunks`);

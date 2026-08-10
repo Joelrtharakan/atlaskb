@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { api } from "./api";
+import { ApiError, api } from "./api";
 import { useAuth } from "./auth";
 import { getActiveWorkspace, setActiveWorkspace } from "./tokens";
 import type { Role, Workspace } from "./types";
@@ -20,6 +20,11 @@ type WorkspaceState = {
   active: Workspace | null;
   role: Role | null;
   ready: boolean;
+  /** Set when the last fetch failed for a reason other than "you have zero
+   *  workspaces" — an empty `workspaces` array alone can't tell those apart,
+   *  and conflating them made AppShell show "create your first workspace"
+   *  for e.g. a transient network error on an existing account. */
+  loadError: string | null;
   setActive: (id: string) => void;
   refresh: () => Promise<Workspace[]>;
 };
@@ -31,6 +36,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async (): Promise<Workspace[]> => {
     const list = await api.listWorkspaces();
@@ -48,11 +54,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!auth.isAuthenticated) {
       setWorkspaces([]);
       setActiveId(null);
+      setLoadError(null);
       setReady(true);
       return;
     }
     load()
-      .catch(() => setWorkspaces([]))
+      .then(() => setLoadError(null))
+      .catch((err) => {
+        setWorkspaces([]);
+        setLoadError(err instanceof ApiError ? err.message : "Couldn't load your workspaces.");
+      })
       .finally(() => setReady(true));
   }, [auth.ready, auth.isAuthenticated, load]);
 
@@ -67,8 +78,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<WorkspaceState>(
-    () => ({ workspaces, active, role: active?.role ?? null, ready, setActive, refresh: load }),
-    [workspaces, active, ready, setActive, load],
+    () => ({ workspaces, active, role: active?.role ?? null, ready, loadError, setActive, refresh: load }),
+    [workspaces, active, ready, loadError, setActive, load],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

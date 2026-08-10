@@ -60,6 +60,12 @@ export default function Home() {
             className="flex items-center gap-4 font-mono text-xs uppercase tracking-cartouche"
           >
             <a
+              href="/how-it-works"
+              className="text-graphite transition-colors hover:text-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            >
+              How it works
+            </a>
+            <a
               href="/login"
               className="text-graphite transition-colors hover:text-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
@@ -97,6 +103,15 @@ export default function Home() {
                 &rarr;
               </span>
             </a>
+            <p className="mt-4 text-sm text-graphite">
+              Curious how this actually works under the hood?{" "}
+              <a
+                href="/how-it-works"
+                className="text-parchment/80 underline decoration-graphite/50 underline-offset-2 transition-colors hover:text-parchment hover:decoration-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              >
+                See the real system →
+              </a>
+            </p>
           </div>
         </div>
 
@@ -109,6 +124,10 @@ export default function Home() {
           <span>multi-tenant</span>
           <span aria-hidden>·</span>
           <span>pgvector · redis</span>
+          <span aria-hidden>·</span>
+          <a href="/how-it-works" className="transition-colors hover:text-parchment">
+            How it works
+          </a>
         </footer>
       </div>
     </main>

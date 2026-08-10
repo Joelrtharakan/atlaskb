@@ -43,6 +43,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
+  // clearTokens() can run outside this component (api.ts clears tokens when
+  // a 401's silent refresh also fails) — without this, `email` stays set to
+  // whatever it was at mount and `isAuthenticated` never notices the session
+  // died, so /login's "already signed in, skip the form" redirect fires on a
+  // dead session and bounces the user straight past the login form.
+  useEffect(() => {
+    const onAuthCleared = () => {
+      setEmail(null);
+      window.localStorage.removeItem(EMAIL_KEY);
+    };
+    window.addEventListener("atlaskb-auth-cleared", onAuthCleared);
+    return () => window.removeEventListener("atlaskb-auth-cleared", onAuthCleared);
+  }, []);
+
   const login = useCallback(async (emailArg: string, password: string) => {
     const tokens = await api.login(emailArg, password);
     setTokens(tokens);

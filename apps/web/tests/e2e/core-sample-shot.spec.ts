@@ -19,21 +19,13 @@ test("core sample — with hovered stratum", async ({ page }) => {
     [TOKEN, WS, EMAIL],
   );
   await page.goto(`/documents/${DOC}`);
-  const canvas = page.locator("canvas");
-  await canvas.waitFor({ timeout: 30_000 });
   const core = page.getByTestId("core-sample");
   await core.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(1200);
-
-  // Sweep the cursor down the core to land on a stratum → side panel fills in.
-  const box = await canvas.boundingBox();
-  if (box) {
-    const cx = box.x + box.width / 2;
-    for (const f of [0.35, 0.5, 0.62, 0.45]) {
-      await page.mouse.move(cx, box.y + box.height * f);
-      await page.waitForTimeout(250);
-    }
-  }
   await page.waitForTimeout(500);
+
+  // Hover a stratum in the (now plain DOM, no canvas) 2D core → side panel fills in.
+  const firstBand = core.locator("button").first();
+  await firstBand.hover();
+  await page.waitForTimeout(300);
   await core.screenshot({ path: "var/atlas/core-sample.png" });
 });

@@ -12,6 +12,7 @@ import { useWorkspace } from "@/lib/workspace";
 import { Button } from "./Button";
 import { ContourProgress } from "./ContourProgress";
 import { Field } from "./Field";
+import { NewWorkspaceModal } from "./NewWorkspaceModal";
 
 const CORE_NAV = [
   { href: "/dashboard", label: "Dashboard" },
@@ -33,6 +34,24 @@ function Loading() {
   return (
     <main className="flex min-h-screen items-center justify-center">
       <ContourProgress size={40} label="Loading" />
+    </main>
+  );
+}
+
+/** Distinct from CreateFirstWorkspace: this is "we couldn't tell whether you
+ *  have workspaces" (a failed fetch), not "you confirmed have zero" — showing
+ *  the create-workspace form here would silently offer to create a duplicate
+ *  workspace for an account that already has one. */
+function WorkspaceLoadError({ message }: { message: string }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center p-3 sm:p-5">
+      <div className="max-w-sm text-center">
+        <p className="font-display text-2xl font-medium text-ink">Couldn&rsquo;t load your workspaces</p>
+        <p className="mt-2 text-sm text-graphite">{message}</p>
+        <Button className="mt-5" onClick={() => window.location.reload()}>
+          Try again
+        </Button>
+      </div>
     </main>
   );
 }
@@ -96,11 +115,10 @@ function CreateFirstWorkspace() {
 
 function WorkspaceSwitcher() {
   const { workspaces, active, setActive } = useWorkspace();
+  const [modalOpen, setModalOpen] = useState(false);
 
-  async function onNew() {
-    const name = window.prompt("Name your new workspace");
-    if (!name?.trim()) return;
-    const ws = await api.createWorkspace(name.trim());
+  async function onCreate(name: string) {
+    const ws = await api.createWorkspace(name);
     setActive(ws.id);
     window.location.reload();
   }
@@ -115,7 +133,7 @@ function WorkspaceSwitcher() {
         value={active?.id ?? ""}
         onChange={(e) => {
           if (e.target.value === "__new__") {
-            onNew();
+            setModalOpen(true);
             return;
           }
           setActive(e.target.value);
@@ -130,6 +148,7 @@ function WorkspaceSwitcher() {
         ))}
         <option value="__new__">+ New workspace…</option>
       </select>
+      <NewWorkspaceModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={onCreate} />
     </div>
   );
 }
@@ -176,6 +195,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   if (!auth.ready || !auth.isAuthenticated || !ws.ready) return <Loading />;
+  if (ws.workspaces.length === 0 && ws.loadError) return <WorkspaceLoadError message={ws.loadError} />;
   if (ws.workspaces.length === 0) return <CreateFirstWorkspace />;
 
   const isAdmin = ws.role === "admin";

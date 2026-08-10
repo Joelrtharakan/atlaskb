@@ -199,6 +199,47 @@ def verify_document(
     )
 
 
+@router.post("/{document_id}/retry", response_model=DocumentDetail)
+def retry_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> DocumentDetail:
+    """Re-enqueue ingestion for a document that's failed, or stuck in
+    ``processing`` with no worker ever going to finish it (e.g. the message
+    that dispatched it hit a worker that didn't have the task registered —
+    a dispatch-level failure, which happens before `ingest_document`'s own
+    try/except and so never reaches a terminal status on its own). Safe to
+    call on an in-progress document too: ingestion re-does the same
+    parse/chunk/embed/write idempotently rather than duplicating anything.
+    """
+    doc = _require_manage(db, document_id, principal)
+    if doc.status not in ("failed", "processing"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only a failed or processing document can be retried.")
+    doc.status = "processing"
+    doc.error = None
+    db.commit()
+    db.refresh(doc)
+    enqueue_ingest(doc.id)
+    chunk_count = db.scalar(
+        select(func.count()).select_from(Chunk).where(Chunk.document_id == doc.id)
+    )
+    return DocumentDetail(
+        id=doc.id,
+        filename=doc.filename,
+        content_type=doc.content_type,
+        status=doc.status,
+        source=doc.source,
+        error=doc.error,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+        last_verified_at=doc.last_verified_at,
+        staleness=doc.staleness,
+        chunk_count=chunk_count or 0,
+        can_manage_access=_can_manage(doc, principal),
+    )
+
+
 @router.get("/{document_id}/chunks", response_model=ChunkSamplesResponse)
 def document_chunks(
     document_id: str,
