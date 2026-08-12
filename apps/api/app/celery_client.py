@@ -11,6 +11,7 @@ from celery import Celery
 from app.config import settings
 
 INGEST_TASK = "atlaskb.ingest_document"
+SYNC_CONNECTOR_TASK = "atlaskb.sync_connector"
 
 celery_producer = Celery("atlaskb-api", broker=settings.redis_url, backend=settings.redis_url)
 celery_producer.conf.update(
@@ -24,3 +25,7 @@ celery_producer.conf.update(
 
 def enqueue_ingest(document_id: str) -> None:
     celery_producer.send_task(INGEST_TASK, args=[document_id])
+
+
+def enqueue_connector_sync(connector_id: str, owner_id: str) -> None:
+    celery_producer.send_task(SYNC_CONNECTOR_TASK, args=[connector_id, owner_id])

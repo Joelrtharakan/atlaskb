@@ -54,6 +54,60 @@ def test_evals_available_flag(client, make_user, tmp_path, monkeypatch):
     assert body["metrics"]["answer_accuracy"] == 1.0
 
 
+def test_evals_headline_assembled_from_real_files(client, make_user, tmp_path, monkeypatch):
+    """T9.8: the headline block must be built from eval/results/*.json files
+    found on disk, not hand-typed — plant a fake results dir and confirm every
+    field traces back to the file that provided it."""
+    user = make_user()
+
+    path = tmp_path / "latest.json"
+    path.write_text(json.dumps({"metrics": {}, "model": "test"}))
+    monkeypatch.setattr(settings, "eval_results_path", str(path))
+
+    (tmp_path / "before_after_after.json").write_text(json.dumps({
+        "dataset_size": 17,
+        "metrics": {
+            "answer_accuracy": 0.929,
+            "retrieval_hit_rate": 1.0,
+            "citation_grounding": 0.857,
+            "citation_coverage": 0.75,
+            "conflict_detection_accuracy": 0.25,
+            "refusal_accuracy": 1.0,
+        },
+        "permission_leakage_detail": {"pass": True},
+    }))
+    (tmp_path / "adversarial.json").write_text(json.dumps({"passed": 6, "total": 7}))
+    (tmp_path / "prompt_injection.json").write_text(json.dumps({"passed": 3, "total": 3}))
+    (tmp_path / "latency_breakdown_ollama_steady_state.json").write_text(json.dumps({
+        "total": {"mean_ms": 8397.7, "p95_ms": 10590.7},
+    }))
+
+    body = client.get("/admin/evals", headers=user.headers).json()
+    h = body["headline"]
+    assert h["total_questions"] == 17
+    assert h["answer_accuracy"] == 0.929
+    assert h["citation_coverage"] == 0.75
+    assert h["permission_leakage"] == 0
+    assert h["adversarial_passed"] == 6 and h["adversarial_total"] == 7
+    assert h["prompt_injection_passed"] == 3 and h["prompt_injection_total"] == 3
+    assert h["avg_latency_ms"] == 8397.7
+    assert h["p95_latency_ms"] == 10590.7
+    assert "before_after_after.json" in h["source_files"]
+    assert "load-latest.json" in h["missing_files"]
+
+
+def test_evals_headline_permission_leakage_none_when_unmeasured(client, make_user, tmp_path, monkeypatch):
+    user = make_user()
+    path = tmp_path / "latest.json"
+    path.write_text(json.dumps({"metrics": {}, "model": "test"}))
+    monkeypatch.setattr(settings, "eval_results_path", str(path))
+
+    body = client.get("/admin/evals", headers=user.headers).json()
+    # No before_after_after.json planted at all -> genuinely unmeasured, must
+    # be None, never silently 0 (0 would falsely read as "measured and clean").
+    assert body["headline"]["permission_leakage"] is None
+
+
 def test_chat_response_includes_usage(client, make_user, ingest_inline, stub_llm):
     user = make_user()
     _upload(client, user.headers)

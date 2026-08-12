@@ -1,0 +1,9 @@
+{
+  "metrics": {
+    "answer_accuracy": 0.857,
+    "citation_grounding": 0.955,
+    "refusal_accuracy": 1.0,
+    "retrieval_hit_rate": 1.0,
+    "conflict_detection_accuracy": 1.0
+  }
+}

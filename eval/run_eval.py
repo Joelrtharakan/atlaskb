@@ -4,10 +4,12 @@
 Runs a small labelled Q&A set (``dataset.json``) over a known corpus
 (``corpus/``) against a *live* AtlasKB backend and reports grounded-RAG metrics:
 
-  * answer_accuracy       — answerable questions whose answer contains the fact
-  * citation_grounding    — answerable answers that cite the expected document
-  * refusal_accuracy      — out-of-corpus questions correctly refused
-  * retrieval_hit_rate    — expected document present in retrieved chunks
+  * answer_accuracy         — answerable questions whose answer contains the fact
+  * citation_grounding      — answerable answers that cite the expected document
+  * refusal_accuracy        — out-of-corpus questions correctly refused
+  * retrieval_hit_rate      — expected document present in retrieved chunks
+  * conflict_detection_accuracy — for questions with an "expect_conflict" label
+    (Trust Layer T4), whether /chat's conflicts array was non-empty iff expected
   * avg_tokens_per_query, latency p50/p95
 
 Results are written to ``eval/results/latest.json`` (read by /admin/evals).
@@ -55,6 +57,9 @@ def main() -> None:
         c.post("/auth/signup", json={"email": email, "password": password}).raise_for_status()
         tokens = c.post("/auth/login", json={"email": email, "password": password}).json()
         headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+        ws = c.post("/workspaces", headers=headers, json={"name": "eval"})
+        ws.raise_for_status()
+        headers["X-Workspace-Id"] = ws.json()["id"]
 
         # Upload the corpus and wait until every document is ready.
         doc_by_id: dict[str, str] = {}
@@ -99,15 +104,23 @@ def main() -> None:
             answer_lower = (data["answer"] or "").lower()
 
             hit = q["expected_doc"] in retrieved_docs if q["expected_doc"] else None
+            # Only score answer content when the dataset actually names substrings
+            # to look for — an empty list means "don't check wording", not "fail".
             answered_correctly = (
                 any(s.lower() in answer_lower for s in q["expected_substrings"])
-                if q["answerable"]
+                if q["answerable"] and q["expected_substrings"]
                 else None
             )
             grounded = (
                 (q["expected_doc"] in cited_docs) if (q["answerable"] and data["answerable"]) else None
             )
             refusal_correct = (data["answerable"] is False) if not q["answerable"] else None
+
+            expect_conflict = q.get("expect_conflict")
+            conflict_detected = len(data.get("conflicts") or []) > 0
+            conflict_correct = (
+                (conflict_detected == expect_conflict) if expect_conflict is not None else None
+            )
 
             results.append(
                 {
@@ -119,6 +132,9 @@ def main() -> None:
                     "answer_correct": answered_correctly,
                     "citation_grounded": grounded,
                     "refusal_correct": refusal_correct,
+                    "expect_conflict": expect_conflict,
+                    "conflict_detected": conflict_detected,
+                    "conflict_correct": conflict_correct,
                     "tokens": data.get("usage", {}).get("total", 0),
                     "latency_ms": round(dt, 1),
                     "answer": data["answer"],
@@ -126,11 +142,13 @@ def main() -> None:
             )
             print(
                 f"  {q['question'][:48]:50s} hit={hit} correct={answered_correctly} "
-                f"grounded={grounded} refuse={refusal_correct} {dt:.0f}ms"
+                f"grounded={grounded} refuse={refusal_correct} conflict={conflict_correct} {dt:.0f}ms"
             )
 
     def rate(key: str, cond) -> float | None:
-        relevant = [r for r in results if cond(r)]
+        # Rows where the metric doesn't apply (key is None) never count toward
+        # either the numerator or denominator — "not checked" isn't "failed".
+        relevant = [r for r in results if cond(r) and r[key] is not None]
         if not relevant:
             return None
         passed = sum(1 for r in relevant if r[key] is True)
@@ -143,6 +161,7 @@ def main() -> None:
         ),
         "refusal_accuracy": rate("refusal_correct", lambda r: not r["answerable_expected"]),
         "retrieval_hit_rate": rate("retrieval_hit", lambda r: r["expected_doc"] is not None),
+        "conflict_detection_accuracy": rate("conflict_correct", lambda r: r["expect_conflict"] is not None),
         "avg_tokens_per_query": round(statistics.mean(tokens_per_query), 1) if tokens_per_query else 0,
         "latency_p50_ms": round(pctl(latencies, 50), 1),
         "latency_p95_ms": round(pctl(latencies, 95), 1),

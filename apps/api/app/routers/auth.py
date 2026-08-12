@@ -49,7 +49,11 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)) -> User:
 @router.post("/login", response_model=TokenPair)
 def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenPair:
     user = db.scalar(select(User).where(User.email == body.email))
-    if user is None or not verify_password(body.password, user.password_hash):
+    # password_hash is None for an SSO-only account (Trust Layer Phase 11) --
+    # must fail the same generic way as an unknown email or wrong password,
+    # never a different error that would confirm "this email exists but is
+    # SSO-only" to an unauthenticated caller.
+    if user is None or user.password_hash is None or not verify_password(body.password, user.password_hash):
         # Same error whether the email is unknown or the password is wrong.
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
     log.info("auth.login", user_id=user.id)

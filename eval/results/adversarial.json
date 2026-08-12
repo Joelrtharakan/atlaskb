@@ -1,0 +1,124 @@
+{
+  "generated_at": "2026-08-11T09:36:39.106210+00:00",
+  "total": 7,
+  "passed": 6,
+  "failed": 1,
+  "results": [
+    {
+      "name": "no_answer",
+      "pass": true,
+      "detail": {
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents."
+      }
+    },
+    {
+      "name": "conflicting_sources",
+      "pass": true,
+      "detail": {
+        "conflicts": [
+          {
+            "topic": "PTO Policy",
+            "description": "Contradictory PTO accrual and cap policies between HR and Engineering departments.",
+            "chunk_ids": [
+              "f7ad91ed-f998-43e1-9d30-314b651bc984",
+              "418a006d-7521-4920-b61b-ad872d893ec8"
+            ],
+            "document_ids": [
+              "c740b9b8-f705-4d64-b6b2-9a4d584f58da",
+              "cd2843ed-3237-4df5-9a24-27231abab05d"
+            ]
+          }
+        ],
+        "answer": "Employees in the HR Handbook have a PTO accrual of 1.5 days per month, capped at 18 days per year."
+      }
+    },
+    {
+      "name": "stale_source",
+      "pass": true,
+      "detail": {
+        "stale_evidence_shown": true,
+        "answer_contains_caveat": true,
+        "evidence_staleness": [
+          1.0
+        ],
+        "answer": "According to an older, unverified document, the YANKEE-9910-LEGACY reimbursement cap is $500 per trip."
+      }
+    },
+    {
+      "name": "version_specific_question",
+      "pass": false,
+      "detail": {
+        "answer": "I cannot answer this question from the available documents.",
+        "mentions_old_value_10": false,
+        "silently_upgraded_to_15_only": false
+      }
+    },
+    {
+      "name": "permission_leakage",
+      "pass": true,
+      "detail": {
+        "pass": true,
+        "restricted_chunk_ids": [
+          "ff912336-f144-454e-a966-df7ddbde7d38"
+        ],
+        "viewer_search_status": 200,
+        "leaked_chunk_ids": [],
+        "outsider_search_status": 403,
+        "outsider_correctly_rejected": true
+      }
+    },
+    {
+      "name": "multi_hop",
+      "pass": true,
+      "detail": {
+        "answer": "AtlasKB uses pgvector for dense retrieval and Postgres full-text search for sparse retrieval. The free tier includes 100 queries per month.",
+        "citations": [
+          {
+            "claim": "AtlasKB uses pgvector for dense retrieval and Postgres full-text search for sparse retrieval",
+            "chunk_ids": [
+              "3eefaff2-0545-419a-83e9-c87cb6974dbb"
+            ]
+          },
+          {
+            "claim": "The AtlasKB free tier includes 100 queries per month.",
+            "chunk_ids": [
+              "6ba6a92b-d421-449b-a8fa-60e06be4acdd"
+            ]
+          }
+        ],
+        "distinct_docs_cited": 2,
+        "citation_entries": 2
+      }
+    },
+    {
+      "name": "claim_citation_coverage",
+      "pass": true,
+      "detail": {
+        "answer": "The Falcon Arm v2 has a reach of 900mm, a payload of 12kg, and draws 48V DC power.",
+        "citations": [
+          {
+            "claim": "The Falcon Arm v2 has a reach of 900mm",
+            "chunk_ids": [
+              "efb46f1a-52fc-46db-8f5d-deb776be1114"
+            ]
+          },
+          {
+            "claim": "It has a payload of 12kg",
+            "chunk_ids": [
+              "efb46f1a-52fc-46db-8f5d-deb776be1114"
+            ]
+          },
+          {
+            "claim": "It draws 48V DC power",
+            "chunk_ids": [
+              "efb46f1a-52fc-46db-8f5d-deb776be1114"
+            ]
+          }
+        ],
+        "coverage": 1.0,
+        "citation_entries": 3
+      }
+    }
+  ]
+}

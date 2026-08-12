@@ -15,8 +15,10 @@ from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    Boolean,
     Computed,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -51,13 +53,47 @@ class User(Base):
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Nullable (Trust Layer Phase 11): an SSO-only user, created via OIDC
+    # login rather than /auth/signup, has no AtlasKB password at all — not
+    # an empty string or a sentinel hash, genuinely null, so
+    # verify_password() is never reachable for that account (see
+    # app/routers/auth.py's login(), which must check for None first).
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     documents: Mapped[list[Document]] = relationship(back_populates="owner")
     memberships: Mapped[list[WorkspaceMembership]] = relationship(back_populates="user")
+    identities: Mapped[list[UserIdentity]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+
+class UserIdentity(Base):
+    """Links a ``User`` to one external identity provider account (Trust
+    Layer Phase 11: OIDC SSO). Kept as its own table rather than columns on
+    ``User`` so a single AtlasKB account can later be linked to more than
+    one IdP (e.g. Google *and* Okta) without a schema change — Phase 11
+    itself only ever creates one row per user (one configured OIDC issuer
+    at a time), but the shape doesn't foreclose more."""
+
+    __tablename__ = "user_identities"
+    __table_args__ = (
+        UniqueConstraint("issuer", "subject", name="uq_user_identity_issuer_subject"),
+    )
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)  # e.g. "oidc"
+    issuer: Mapped[str] = mapped_column(String(500), nullable=False)  # the IdP's `iss` claim
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)  # the IdP's `sub` claim
+    email: Mapped[str] = mapped_column(String(320), nullable=False)  # IdP's email at link time
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    user: Mapped[User] = relationship(back_populates="identities")
 
 
 class Workspace(Base):
@@ -233,6 +269,34 @@ class DocumentAccessGrant(Base):
     document: Mapped[Document] = relationship(back_populates="grants")
 
 
+class DocumentVersion(Base):
+    """One ingested revision of a document. Re-uploading never overwrites a prior
+    version's chunks in place — it creates a new version row and re-points
+    retrieval at it, so history stays queryable (lineage) while search only ever
+    sees the current version (see ``retrieval.py``'s ``is_current_version`` scoping)."""
+
+    __tablename__ = "document_versions"
+    __table_args__ = (
+        UniqueConstraint("document_id", "version_number", name="uq_document_versions_doc_number"),
+    )
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    document_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    created_by: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
+    is_current_version: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    document: Mapped[Document] = relationship()
+    chunks: Mapped[list[Chunk]] = relationship(back_populates="version")
+
+
 class Chunk(Base):
     __tablename__ = "chunks"
 
@@ -240,6 +304,12 @@ class Chunk(Base):
     workspace_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
     document_id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+    )
+    version_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False),
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
@@ -254,6 +324,7 @@ class Chunk(Base):
     )
 
     document: Mapped[Document] = relationship(back_populates="chunks")
+    version: Mapped[DocumentVersion | None] = relationship(back_populates="chunks")
 
 
 class Conversation(Base):
@@ -294,6 +365,33 @@ class Message(Base):
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
 
+class MessageFeedback(Base):
+    """A user's thumbs up/down on one assistant answer. One rating per
+    (message, user) — re-rating overwrites rather than accumulating duplicates,
+    since it's "does this answer look right to you", not a vote count."""
+
+    __tablename__ = "message_feedback"
+    __table_args__ = (
+        UniqueConstraint("message_id", "user_id", name="uq_message_feedback_message_user"),
+    )
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    message_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("messages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    workspace_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    rating: Mapped[str] = mapped_column(String(8), nullable=False)  # "up" | "down"
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
@@ -325,6 +423,102 @@ class ContentGapResolution(Base):
     resolved_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class ConflictRecord(Base):
+    """Persisted output of the structured conflict-detection pipeline (Trust
+    Layer Phase 1) — one row per *classified chunk pair*, not only the
+    contradictions: SUPPORTS/COMPLEMENTS/UNRELATED/UNCERTAIN pairs are written
+    too, so the full classification is auditable even though ``/chat``'s
+    response only surfaces CONTRADICTS pairs today. Always workspace-scoped —
+    the pipeline only ever runs over chunks already RBAC/workspace-scoped by
+    retrieval, so a row here can never span two workspaces."""
+
+    __tablename__ = "conflicts"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    workspace_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
+
+    document_id_a: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    document_version_a: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
+    chunk_id_a: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    claim_a: Mapped[str] = mapped_column(Text, nullable=False)
+
+    document_id_b: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    document_version_b: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
+    chunk_id_b: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    claim_b: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # SUPPORTS | CONTRADICTS | COMPLEMENTS | UNRELATED | UNCERTAIN
+    relationship: Mapped[str] = mapped_column(String(16), nullable=False)
+    # 0.0-1.0. "deterministic" rows use fixed constants documented in
+    # app/config.py; "llm" rows are the model's own self-reported confidence,
+    # not independently calibrated — see eval/conflicts/README.md.
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    # "deterministic" | "llm" — which pipeline stage produced this classification.
+    method: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ConnectorConfig(Base):
+    """One configured connection to an external source (Trust Layer
+    Phase 10 architecture, Phase 11 real Google Drive provider; see
+    app/connectors/base.py and app/connectors/google_drive.py).
+    ``credentials_ref`` is deliberately never a plaintext secret — for the
+    Google Drive provider it's a Fernet-encrypted OAuth refresh token (see
+    app/connectors/tokens.py), decrypted only in-memory for the duration of
+    a sync."""
+
+    __tablename__ = "connector_configs"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    workspace_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)  # e.g. "google_drive"
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # TEXT, not VARCHAR(200): holds the Fernet-encrypted refresh token (see
+    # app/connectors/tokens.py), which routinely exceeds 200 chars.
+    credentials_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")  # active | disabled
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    created_by: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_sync_status: Mapped[str | None] = mapped_column(String(16), nullable=True)  # ok | error
+
+
+class ConnectorDocument(Base):
+    """Sync state for one external document under a ``ConnectorConfig`` —
+    links it to the normal ``Document`` row once first synced, so re-syncs
+    can tell "new" from "changed" from "unchanged" without re-fetching
+    content that hasn't changed (``checksum``/``external_version``)."""
+
+    __tablename__ = "connector_documents"
+    __table_args__ = (
+        UniqueConstraint(
+            "connector_id", "external_document_id", name="uq_connector_doc_external_id"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    connector_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("connector_configs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    workspace_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
+    external_source_id: Mapped[str] = mapped_column(String(64), nullable=False)  # e.g. drive folder/site id
+    external_document_id: Mapped[str] = mapped_column(String(300), nullable=False)
+    document_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("documents.id", ondelete="CASCADE"), nullable=True
+    )
+    checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    external_version: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    permission_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    sync_status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")  # pending|ok|error
 
 
 # GIN index for full-text search; the vector (HNSW) index is created in the

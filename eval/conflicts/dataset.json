@@ -1,0 +1,221 @@
+{
+  "description": "Labeled synthetic benchmark for the structured conflict-detection pipeline (Trust Layer Phase 1). Each case is a pair of claims, each attributed to a different document, with a ground-truth relationship label from the 5-way taxonomy (SUPPORTS/CONTRADICTS/COMPLEMENTS/UNRELATED/UNCERTAIN). Grouped into 8 categories per the phase spec: obvious_contradiction, subtle_contradiction, numeric_contradiction, date_contradiction, policy_contradiction, complementary_claims, unrelated_claims, ambiguous_claims.",
+  "cases": [
+    {
+      "id": "obvious-1",
+      "category": "obvious_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "All full-time employees receive 20 days of paid annual leave per year.",
+      "claim_b": "All full-time employees receive 30 days of paid annual leave per year.",
+      "doc_a": "hr-policy-2024",
+      "doc_b": "hr-policy-2025-draft"
+    },
+    {
+      "id": "obvious-2",
+      "category": "obvious_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "The maximum file upload size is 10 MB.",
+      "claim_b": "The maximum file upload size is 50 MB.",
+      "doc_a": "api-docs-v1",
+      "doc_b": "api-docs-v2"
+    },
+    {
+      "id": "obvious-3",
+      "category": "obvious_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "The standard warranty period for this product is 1 year.",
+      "claim_b": "The standard warranty period for this product is 3 years.",
+      "doc_a": "warranty-terms-old",
+      "doc_b": "warranty-terms-new"
+    },
+    {
+      "id": "subtle-1",
+      "category": "subtle_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "Reimbursement requests submitted more than 60 days after the expense date will not be processed.",
+      "claim_b": "Employees have up to 90 days from the date of purchase to file for reimbursement.",
+      "doc_a": "expense-policy-finance",
+      "doc_b": "expense-policy-handbook"
+    },
+    {
+      "id": "subtle-2",
+      "category": "subtle_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "Support tickets marked urgent are guaranteed a first response within 4 business hours.",
+      "claim_b": "Our SLA commits to responding to all urgent-priority tickets within one business day.",
+      "doc_a": "support-sla-summary",
+      "doc_b": "support-sla-contract"
+    },
+    {
+      "id": "subtle-3",
+      "category": "subtle_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "Only workspace admins are permitted to invite new members.",
+      "claim_b": "Any editor can send an invitation to add a new member to the workspace.",
+      "doc_a": "permissions-guide-v1",
+      "doc_b": "permissions-guide-v2"
+    },
+    {
+      "id": "numeric-1",
+      "category": "numeric_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "The Falcon Arm v2 has a reach of 900mm.",
+      "claim_b": "The Falcon Arm v2 has a reach of 1200mm.",
+      "doc_a": "falcon-spec-datasheet",
+      "doc_b": "falcon-spec-brochure"
+    },
+    {
+      "id": "numeric-2",
+      "category": "numeric_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "The monthly subscription fee is $49.",
+      "claim_b": "The monthly subscription fee is $79.",
+      "doc_a": "pricing-page-2024",
+      "doc_b": "pricing-page-2025"
+    },
+    {
+      "id": "numeric-3",
+      "category": "numeric_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "PTO accrues at 1.5 days per month, capped at 18 days per year.",
+      "claim_b": "Engineering is unlimited PTO with no accrual cap.",
+      "doc_a": "northwind-pto-hr-policy",
+      "doc_b": "northwind-pto-eng-handbook"
+    },
+    {
+      "id": "date-1",
+      "category": "date_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "The remote-work policy took effect on January 1, 2023.",
+      "claim_b": "The remote-work policy took effect on January 1, 2024.",
+      "doc_a": "remote-work-policy-v1",
+      "doc_b": "remote-work-policy-v2"
+    },
+    {
+      "id": "date-2",
+      "category": "date_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "Open enrollment for benefits closes on November 15.",
+      "claim_b": "Open enrollment for benefits closes on December 1.",
+      "doc_a": "benefits-guide-hr",
+      "doc_b": "benefits-guide-intranet"
+    },
+    {
+      "id": "date-3",
+      "category": "date_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "This security requirement was introduced in the 2023 compliance update.",
+      "claim_b": "This security requirement was introduced in the 2021 compliance update.",
+      "doc_a": "compliance-changelog-a",
+      "doc_b": "compliance-changelog-b"
+    },
+    {
+      "id": "policy-1",
+      "category": "policy_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "Contractors are not permitted to access the production database under any circumstances.",
+      "claim_b": "Contractors may be granted temporary production database access with manager approval.",
+      "doc_a": "security-policy-strict",
+      "doc_b": "security-policy-updated"
+    },
+    {
+      "id": "policy-2",
+      "category": "policy_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "Refunds are not offered once a service has been used, regardless of circumstances.",
+      "claim_b": "Customers may request a full refund within 30 days even after using the service.",
+      "doc_a": "refund-policy-legacy",
+      "doc_b": "refund-policy-current"
+    },
+    {
+      "id": "policy-3",
+      "category": "policy_contradiction",
+      "expected_relationship": "CONTRADICTS",
+      "claim_a": "Remote work is not permitted for employees in the Engineering department.",
+      "claim_b": "Engineering employees may work remotely up to three days per week.",
+      "doc_a": "wfh-policy-2022",
+      "doc_b": "wfh-policy-2024"
+    },
+    {
+      "id": "complement-1",
+      "category": "complementary_claims",
+      "expected_relationship": "COMPLEMENTS",
+      "claim_a": "Employees submit leave requests through the HR portal.",
+      "claim_b": "Managers are responsible for approving or denying leave requests within 3 business days.",
+      "doc_a": "leave-process-employee-guide",
+      "doc_b": "leave-process-manager-guide"
+    },
+    {
+      "id": "complement-2",
+      "category": "complementary_claims",
+      "expected_relationship": "COMPLEMENTS",
+      "claim_a": "New hires complete workstation setup on their first day.",
+      "claim_b": "IT provisions system access for new hires within 24 hours of their start date.",
+      "doc_a": "onboarding-checklist",
+      "doc_b": "it-provisioning-sla"
+    },
+    {
+      "id": "complement-3",
+      "category": "complementary_claims",
+      "expected_relationship": "COMPLEMENTS",
+      "claim_a": "The API uses hybrid retrieval combining dense and sparse search.",
+      "claim_b": "Retrieved candidates are reranked by a cross-encoder before the final answer is generated.",
+      "doc_a": "architecture-retrieval-doc",
+      "doc_b": "architecture-generation-doc"
+    },
+    {
+      "id": "unrelated-1",
+      "category": "unrelated_claims",
+      "expected_relationship": "UNRELATED",
+      "claim_a": "The Falcon Arm v2 has a reach of 900mm.",
+      "claim_b": "Monthly billing invoices are issued on the first business day of each month.",
+      "doc_a": "falcon-spec-datasheet",
+      "doc_b": "billing-policy"
+    },
+    {
+      "id": "unrelated-2",
+      "category": "unrelated_claims",
+      "expected_relationship": "UNRELATED",
+      "claim_a": "The capital of Zubrowka is Lutz.",
+      "claim_b": "Support tickets marked urgent are guaranteed a first response within 4 business hours.",
+      "doc_a": "zubrowka-geography",
+      "doc_b": "support-sla-summary"
+    },
+    {
+      "id": "unrelated-3",
+      "category": "unrelated_claims",
+      "expected_relationship": "UNRELATED",
+      "claim_a": "The office kitchen is stocked with coffee and snacks every Monday.",
+      "claim_b": "The database uses pgvector for dense embedding similarity search.",
+      "doc_a": "office-amenities",
+      "doc_b": "architecture-retrieval-doc"
+    },
+    {
+      "id": "ambiguous-1",
+      "category": "ambiguous_claims",
+      "expected_relationship": "UNCERTAIN",
+      "claim_a": "The team decided to revisit the policy after some concerns were raised.",
+      "claim_b": "There was general agreement that the current approach needed adjustment.",
+      "doc_a": "meeting-notes-q1",
+      "doc_b": "meeting-notes-q2"
+    },
+    {
+      "id": "ambiguous-2",
+      "category": "ambiguous_claims",
+      "expected_relationship": "UNCERTAIN",
+      "claim_a": "Performance reviews should reflect the employee's overall contribution.",
+      "claim_b": "Managers are encouraged to consider both output and collaboration when evaluating performance.",
+      "doc_a": "performance-review-guide-a",
+      "doc_b": "performance-review-guide-b"
+    },
+    {
+      "id": "ambiguous-3",
+      "category": "ambiguous_claims",
+      "expected_relationship": "UNCERTAIN",
+      "claim_a": "The rollout will happen in phases depending on team readiness.",
+      "claim_b": "Some teams may adopt the new process sooner than others.",
+      "doc_a": "rollout-plan-a",
+      "doc_b": "rollout-plan-b"
+    }
+  ]
+}

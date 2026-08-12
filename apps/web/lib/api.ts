@@ -13,17 +13,26 @@ import {
 import type {
   AccessGrant,
   Analytics,
+  AuditLogResponse,
   ChatResponse,
   ChunkSamplesResponse,
+  Connector,
   ContentGapsResponse,
+  ConversationDetail,
+  ConversationSummary,
   DocumentAccess,
   DocumentDetail,
   DocumentOut,
+  DocumentVersionsResponse,
   EvalResults,
+  Feedback,
+  FeedbackSummaryResponse,
   LLMHealth,
   Invite,
   InvitePreview,
   Member,
+  OIDCConfig,
+  OIDCExchangeResult,
   QueryVolumeResponse,
   ReliefSummary,
   Role,
@@ -203,6 +212,31 @@ export const api = {
     return request<ChunkSamplesResponse>(`/documents/${id}/chunks`);
   },
 
+  /** Full version history for a document, newest first. */
+  async documentVersions(id: string): Promise<DocumentVersionsResponse> {
+    return request<DocumentVersionsResponse>(`/documents/${id}/versions`);
+  },
+
+  /** Read-only chunk view of one historical version. */
+  async documentVersionChunks(id: string, versionId: string): Promise<ChunkSamplesResponse> {
+    return request<ChunkSamplesResponse>(`/documents/${id}/versions/${versionId}/chunks`);
+  },
+
+  /** Replace a document's content — creates a new version and re-ingests. */
+  async reuploadDocument(id: string, file: File): Promise<DocumentDetail> {
+    const form = new FormData();
+    form.append("file", file);
+    return request<DocumentDetail>(`/documents/${id}/reupload`, {
+      method: "POST",
+      body: form,
+      messages: {
+        415: "AtlasKB reads PDF, Markdown, and HTML. Convert this file and upload it again.",
+        413: "That file is too large to upload. Split it into smaller documents.",
+        403: "Only the document's owner or a workspace admin can re-upload it.",
+      },
+    });
+  },
+
   /** Relief-map data for the Dashboard: every visible doc's mass + staleness. */
   async relief(): Promise<ReliefSummary> {
     return request<ReliefSummary>("/dashboard/relief");
@@ -261,9 +295,41 @@ export const api = {
     });
   },
 
+  /** Thumbs up/down an assistant answer. Re-rating overwrites the prior one. */
+  async rateMessage(messageId: string, rating: Feedback): Promise<{ message_id: string; rating: Feedback }> {
+    return request(`/chat/messages/${messageId}/feedback`, {
+      method: "POST",
+      ...jsonBody({ rating }),
+    });
+  },
+
+  async listConversations(): Promise<ConversationSummary[]> {
+    return request<ConversationSummary[]>("/conversations");
+  },
+
+  async getConversation(id: string): Promise<ConversationDetail> {
+    return request<ConversationDetail>(`/conversations/${id}`, {
+      messages: { 404: "That conversation doesn't exist, or it isn't yours." },
+    });
+  },
+
   async analytics(): Promise<Analytics> {
     return request<Analytics>("/admin/analytics", {
       messages: { 403: "Analytics is available to workspace admins only." },
+    });
+  },
+
+  /** Tenant-scoped admin/editor action history. */
+  async auditLog(limit = 50, offset = 0): Promise<AuditLogResponse> {
+    return request<AuditLogResponse>(`/admin/audit-log?limit=${limit}&offset=${offset}`, {
+      messages: { 403: "The audit log is available to workspace admins only." },
+    });
+  },
+
+  /** Every rated answer in the workspace — the read side of the feedback loop. */
+  async feedbackSummary(): Promise<FeedbackSummaryResponse> {
+    return request<FeedbackSummaryResponse>("/admin/feedback", {
+      messages: { 403: "Feedback is available to workspace admins only." },
     });
   },
 
@@ -340,6 +406,51 @@ export const api = {
     return request<DocumentAccess>(`/documents/${documentId}/access`, {
       method: "PATCH",
       ...jsonBody({ grants }),
+    });
+  },
+
+  // --- Connectors ---
+  async listConnectors(): Promise<Connector[]> {
+    return request<Connector[]>("/connectors", {
+      messages: { 403: "Connectors are available to workspace admins only." },
+    });
+  },
+
+  /** Starts the Google Drive OAuth flow — caller redirects the browser to the returned URL. */
+  async authorizeGoogleDrive(name: string, folderId: string | null): Promise<{ authorize_url: string }> {
+    return request<{ authorize_url: string }>("/connectors/google/authorize", {
+      method: "POST",
+      ...jsonBody({ name, folder_id: folderId || null }),
+      messages: {
+        503: "Google Drive isn't configured on this server — set GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET.",
+      },
+    });
+  },
+
+  async syncConnectorNow(id: string): Promise<{ queued: boolean }> {
+    return request<{ queued: boolean }>(`/connectors/${id}/sync`, { method: "POST" });
+  },
+
+  async testConnector(id: string): Promise<{ ok: boolean; error?: string }> {
+    return request<{ ok: boolean; error?: string }>(`/connectors/${id}/test`, { method: "POST" });
+  },
+
+  async deleteConnector(id: string): Promise<void> {
+    return request<void>(`/connectors/${id}`, { method: "DELETE" });
+  },
+
+  // --- SSO / OIDC ---
+  async oidcConfig(): Promise<OIDCConfig> {
+    return request<OIDCConfig>("/auth/oidc/config", { auth: false });
+  },
+
+  /** Exchanges the one-time code from the OIDC callback redirect for a real session. */
+  async oidcExchange(code: string): Promise<OIDCExchangeResult> {
+    return request<OIDCExchangeResult>("/auth/oidc/exchange", {
+      method: "POST",
+      auth: false,
+      ...jsonBody({ code }),
+      messages: { 400: "This sign-in link has expired or was already used. Try signing in again." },
     });
   },
 };

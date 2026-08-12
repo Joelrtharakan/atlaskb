@@ -8,6 +8,7 @@ workspace context is established.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 
@@ -74,6 +75,16 @@ def get_principal(request: Request, db: Session = Depends(get_db)) -> Principal:
       * ``Authorization: Bearer <jwt>`` + ``X-Workspace-Id`` — the user must be a
         member of the named workspace; their role there is used.
     """
+    _start = time.perf_counter()
+    try:
+        return _resolve_principal(request, db)
+    finally:
+        # Stashed for /chat's T9.5 stage-timing breakdown; harmless no-op read
+        # for every other endpoint that doesn't look at request.state.auth_ms.
+        request.state.auth_ms = (time.perf_counter() - _start) * 1000
+
+
+def _resolve_principal(request: Request, db: Session) -> Principal:
     api_key = request.headers.get("x-api-key")
     if api_key:
         return _principal_from_api_key(db, api_key)

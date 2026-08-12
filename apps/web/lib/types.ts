@@ -33,6 +33,22 @@ export type DocumentDetail = DocumentOut & {
   can_manage_access: boolean;
 };
 
+export type DocumentVersion = {
+  id: string;
+  version_number: number;
+  content_hash: string | null;
+  source: string | null;
+  created_at: string;
+  created_by: string | null;
+  is_current_version: boolean;
+  chunk_count: number;
+};
+
+export type DocumentVersionsResponse = {
+  document_id: string;
+  versions: DocumentVersion[];
+};
+
 /** One chunk as a stratum of the Core Sample. */
 export type ChunkSample = {
   chunk_id: string;
@@ -66,7 +82,21 @@ export type ReliefSummary = {
   cells: ReliefCell[];
 };
 
-/** An unanswered-question cluster → one fog patch on the Fog-of-War map. */
+export type GapCause =
+  | "MISSING_DOCUMENT"
+  | "OUTDATED_DOCUMENT"
+  | "CONFLICTING_DOCUMENT"
+  | "INSUFFICIENT_EVIDENCE"
+  | "RETRIEVAL_FAILURE"
+  | "PERMISSION_RESTRICTION"
+  | "MODEL_FAILURE"
+  | "AMBIGUOUS_QUERY"
+  | "UNCLASSIFIED";
+
+/** An unanswered-question cluster → one fog patch on the Fog-of-War map.
+ * `cause`/`suggested_remediation` (Trust Layer Phase 7) are computed live
+ * against current documents/ACLs each time the page loads, not from
+ * historical data — see app/content_gaps.py's module docstring. */
 export type ContentGap = {
   key: string;
   query: string;
@@ -76,6 +106,10 @@ export type ContentGap = {
   radius: number;
   resolved: boolean;
   members: string[];
+  cause: GapCause;
+  affected_user_ids: string[];
+  relevant_document_ids: string[];
+  suggested_remediation: string;
 };
 
 export type ContentGapsResponse = {
@@ -145,12 +179,14 @@ export type DocumentAccess = {
 export type ScoredChunk = {
   chunk_id: string;
   document_id: string;
+  version_id: string | null;
   text: string;
   page_num: number | null;
   section: string | null;
   score: number;
   dense_score: number | null;
   sparse_score: number | null;
+  rerank_score: number | null;
 };
 
 export type SearchResponse = {
@@ -163,22 +199,151 @@ export type Citation = {
   chunk_ids: string[];
 };
 
+/** SUPPORTS/COMPLEMENTS/UNRELATED/UNCERTAIN pairs are never surfaced here —
+ * `/chat` only ever includes CONTRADICTS pairs in this list (Trust Layer
+ * Phase 1). `relationship`/`confidence`/`chunk_id_a,b`/`claim_a,b` are new
+ * in Phase 1 — older cached responses may omit them, hence optional. */
+export type Conflict = {
+  topic: string;
+  description: string;
+  chunk_ids: string[];
+  document_ids: string[];
+  relationship?: string;
+  confidence?: number | null;
+  chunk_id_a?: string | null;
+  claim_a?: string | null;
+  chunk_id_b?: string | null;
+  claim_b?: string | null;
+};
+
+export type Evidence = {
+  chunk_id: string;
+  document_id: string;
+  filename: string;
+  page_num: number | null;
+  section: string | null;
+  dense_score: number | null;
+  sparse_score: number | null;
+  rerank_score: number | null;
+  staleness: number;
+  last_verified_at: string | null;
+  version_number: number | null;
+  is_current_version: boolean;
+  /** Trust Layer Phase 4: false only under MAX_TRUST, where evidence covers
+   * every retrieved chunk, not just the ones the answer actually cited. */
+  is_cited?: boolean;
+};
+
 export type TokenUsage = {
   prompt: number;
   completion: number;
   total: number;
 };
 
+/** Trust Layer Phase 5: structured, evidence-derived trust signals — never a
+ * single fabricated percentage. `null`/"Unknown" fields are honest gaps, not
+ * missing data to paper over. */
+export type TrustSummary = {
+  citation_coverage: number | null;
+  citation_quality: string;
+  source_freshness: string;
+  version: string;
+  conflicts_detected: number;
+  conflicts_summary: string;
+  evidence_completeness: string;
+  permission_check: string;
+};
+
+/** Trust Layer Phase 2: one aligned chunk-position between two versions. */
+export type VersionDiffEntry = {
+  kind: "ADDED" | "REMOVED" | "CHANGED" | "UNCHANGED" | "CONFLICTING";
+  chunk_index: number;
+  old_chunk_id: string | null;
+  new_chunk_id: string | null;
+  old_text: string | null;
+  new_text: string | null;
+};
+
+/** Trust Layer Phase 2: present only when the question was routed off the
+ * normal current-version path (historical/version-specific/comparison). */
+export type TemporalInfo = {
+  intent: "CURRENT" | "HISTORICAL" | "VERSION_SPECIFIC" | "COMPARE_VERSIONS" | "CHANGE_SUMMARY" | "UNKNOWN";
+  document_id: string | null;
+  resolved_version_number: number | null;
+  compared_version_numbers: number[] | null;
+  diff: VersionDiffEntry[] | null;
+};
+
+export type TrustMode = "FAST" | "BALANCED" | "MAX_TRUST";
+
 export type ChatResponse = {
   answerable: boolean;
   answer: string;
   citations: Citation[];
   retrieved: ScoredChunk[];
+  conflicts?: Conflict[];
+  evidence?: Evidence[];
+  message_id?: string | null;
   cached?: boolean;
   conversation_id?: string | null;
   iterations?: number;
   queries?: string[];
   usage?: TokenUsage;
+  trust_mode?: TrustMode;
+  trust_summary?: TrustSummary | null;
+  temporal?: TemporalInfo | null;
+};
+
+export type Feedback = "up" | "down";
+
+export type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+  feedback: Feedback | null;
+};
+
+export type ConversationSummary = {
+  id: string;
+  title: string;
+  created_at: string;
+};
+
+export type ConversationDetail = ConversationSummary & {
+  messages: Message[];
+};
+
+export type AuditLogEntry = {
+  id: string;
+  user_id: string | null;
+  action: string;
+  target: string | null;
+  meta: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type AuditLogResponse = {
+  entries: AuditLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type FeedbackSummaryEntry = {
+  message_id: string;
+  conversation_id: string;
+  question: string | null;
+  answer: string;
+  rating: Feedback;
+  user_email: string | null;
+  created_at: string;
+};
+
+export type FeedbackSummaryResponse = {
+  entries: FeedbackSummaryEntry[];
+  up_count: number;
+  down_count: number;
 };
 
 export type Analytics = {
@@ -199,6 +364,7 @@ export type EvalMetrics = {
   citation_grounding: number | null;
   refusal_accuracy: number | null;
   retrieval_hit_rate: number | null;
+  conflict_detection_accuracy: number | null;
   avg_tokens_per_query: number;
   latency_p50_ms: number;
   latency_p95_ms: number;
@@ -213,9 +379,32 @@ export type EvalResultRow = {
   answer_correct: boolean | null;
   citation_grounded: boolean | null;
   refusal_correct: boolean | null;
+  expect_conflict: boolean | null;
+  conflict_detected: boolean | null;
+  conflict_correct: boolean | null;
   tokens: number;
   latency_ms: number;
   answer: string;
+};
+
+export type EvalHeadline = {
+  total_questions: number | null;
+  answer_accuracy: number | null;
+  retrieval_hit_rate: number | null;
+  citation_accuracy: number | null;
+  citation_coverage: number | null;
+  conflict_detection_accuracy: number | null;
+  refusal_accuracy: number | null;
+  permission_leakage: number | null;
+  avg_latency_ms: number | null;
+  p95_latency_ms: number | null;
+  cache_hit_rate: number | null;
+  adversarial_passed: number | null;
+  adversarial_total: number | null;
+  prompt_injection_passed: number | null;
+  prompt_injection_total: number | null;
+  source_files: string[];
+  missing_files: string[];
 };
 
 export type EvalResults = {
@@ -226,4 +415,24 @@ export type EvalResults = {
   corpus_size?: number;
   metrics?: EvalMetrics;
   results?: EvalResultRow[];
+  headline?: EvalHeadline;
+};
+
+export type Connector = {
+  id: string;
+  provider: string;
+  name: string;
+  status: string;
+  connected: boolean;
+  created_at: string;
+  last_sync_at: string | null;
+  last_sync_status: string | null;
+};
+
+export type OIDCConfig = {
+  enabled: boolean;
+};
+
+export type OIDCExchangeResult = TokenPair & {
+  email: string;
 };

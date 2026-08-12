@@ -9,7 +9,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.cache import cache_get, cache_key, cache_set
+from app.cache import cache_get, cache_key, cache_set, get_workspace_epoch
 from app.config import settings
 from app.db import get_db
 from app.deps import get_principal
@@ -17,7 +17,7 @@ from app.embeddings import embed_query
 from app.logging_config import get_logger
 from app.ratelimit import check_rate_limit
 from app.rbac import Principal
-from app.retrieval import hybrid_search
+from app.retrieval import config_fingerprint, hybrid_search
 from app.schemas import ScoredChunk, SearchRequest, SearchResponse
 
 router = APIRouter(prefix="/search", tags=["search"])
@@ -36,8 +36,9 @@ def search(
         namespace="search",
         workspace_id=principal.workspace_id,
         user_id=principal.user_id,
-        model=f"{settings.embedding_model}:k{body.top_k}",
+        model=f"{settings.embedding_model}:k{body.top_k}:{config_fingerprint()}",
         query=body.query,
+        epoch=get_workspace_epoch(principal.workspace_id),
     )
     cached = cache_get(key)
     if cached is not None:
@@ -54,12 +55,14 @@ def search(
         ScoredChunk(
             chunk_id=h.chunk_id,
             document_id=h.document_id,
+            version_id=h.version_id,
             text=h.text,
             page_num=h.page_num,
             section=h.section,
             score=h.score,
             dense_score=h.dense_score,
             sparse_score=h.sparse_score,
+            rerank_score=h.rerank_score,
         )
         for h in hits
     ]

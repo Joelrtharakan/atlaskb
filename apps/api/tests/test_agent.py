@@ -9,7 +9,7 @@ from app.retrieval import RetrievedChunk
 
 def _chunk(cid: str, text: str = "text") -> RetrievedChunk:
     return RetrievedChunk(
-        chunk_id=cid, document_id="d", text=text, page_num=1, section=None, score=1.0
+        chunk_id=cid, document_id="d", version_id="v1", text=text, page_num=1, section=None, score=1.0
     )
 
 

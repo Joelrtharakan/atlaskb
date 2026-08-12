@@ -5,7 +5,22 @@ import { useCallback, useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ApiError, api } from "@/lib/api";
-import type { ContentGap, ReliefCell } from "@/lib/types";
+import type { ContentGap, GapCause, ReliefCell } from "@/lib/types";
+
+/** Human-readable label per cause (Trust Layer Phase 7) — the raw enum
+ * value is still shown in the marginalia below it for anyone cross-
+ * referencing eval/results or server logs. */
+const CAUSE_LABELS: Record<GapCause, string> = {
+  MISSING_DOCUMENT: "No document covers this",
+  OUTDATED_DOCUMENT: "Closest source is stale",
+  CONFLICTING_DOCUMENT: "Sources disagree",
+  INSUFFICIENT_EVIDENCE: "Weak match only",
+  RETRIEVAL_FAILURE: "Content exists, wasn't surfaced",
+  PERMISSION_RESTRICTION: "Restricted by ACL",
+  MODEL_FAILURE: "Evidence exists, answer still failed",
+  AMBIGUOUS_QUERY: "Question too vague to route",
+  UNCLASSIFIED: "Not yet classified",
+};
 
 const FogOfWar = dynamic(
   () => import("./FogOfWar").then((m) => m.FogOfWar),
@@ -94,16 +109,24 @@ export function ContentGapsView() {
               .slice()
               .sort((a, b) => Number(a.resolved) - Number(b.resolved) || b.count - a.count)
               .map((g) => (
-                <li key={g.key} className="flex items-center justify-between gap-4 py-2">
+                <li key={g.key} className="flex items-center justify-between gap-4 py-3">
                   <span className="min-w-0">
                     <span
                       className={`block truncate text-sm ${g.resolved ? "text-graphite line-through" : "text-ink"}`}
                     >
                       {g.query}
                     </span>
-                    <span className="font-mono text-[10px] text-graphite">
-                      asked {g.count}×
+                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="font-mono text-[10px] text-graphite">asked {g.count}×</span>
+                      <span className="rounded-sm border border-brass/50 bg-brass/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-cartouche text-brass">
+                        {CAUSE_LABELS[g.cause] ?? g.cause}
+                      </span>
                     </span>
+                    {!g.resolved && g.suggested_remediation ? (
+                      <span className="mt-1 block max-w-md text-xs text-graphite">
+                        {g.suggested_remediation}
+                      </span>
+                    ) : null}
                   </span>
                   {g.resolved ? (
                     <span className="shrink-0 font-mono text-[10px] uppercase text-graphite">

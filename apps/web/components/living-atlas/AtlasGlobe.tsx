@@ -16,6 +16,8 @@ const INK = "#16232B";
 const GRAPHITE = "#515C63";
 const MERIDIAN = "#22B2A6";
 const BEACON = "#E8A22B";
+const BRASS = "#C08A45";
+const SIGNAL_RED = "#C1462F";
 
 const R = 3.2; // globe radius
 
@@ -100,12 +102,29 @@ interface Props {
   highlightedId: string | null;
   focus: boolean;
   reducedMotion: boolean;
+  /** Document ids whose evidence is aging (staleness > 0.5) — tints the halo
+   * brass instead of teal, same threshold used across the rest of the app. */
+  staleIds?: string[];
+  /** Document id pairs currently flagged as factually conflicting — drawn as a
+   * red arc between the two nodes with a red pulsing ring on each. */
+  conflictPairs?: [string, string][];
 }
 
-export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, reducedMotion }: Props) {
+export function AtlasGlobe({
+  nodes,
+  activeIds,
+  citedIds,
+  highlightedId,
+  focus,
+  reducedMotion,
+  staleIds = [],
+  conflictPairs = [],
+}: Props) {
   const group = useRef<THREE.Group>(null);
   const cores = useRef<THREE.InstancedMesh>(null);
   const halos = useRef<THREE.InstancedMesh>(null);
+  const conflictRings = useRef<THREE.InstancedMesh>(null);
+  const staleRings = useRef<THREE.InstancedMesh>(null);
   const { camera } = useThree();
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
@@ -168,9 +187,15 @@ export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, r
       dummy.scale.setScalar(0.16);
       dummy.updateMatrix();
       halos.current?.setMatrixAt(i, dummy.matrix);
+      dummy.scale.setScalar(0);
+      dummy.updateMatrix();
+      conflictRings.current?.setMatrixAt(i, dummy.matrix);
+      staleRings.current?.setMatrixAt(i, dummy.matrix);
     });
     if (cores.current) cores.current.instanceMatrix.needsUpdate = true;
     if (halos.current) halos.current.instanceMatrix.needsUpdate = true;
+    if (conflictRings.current) conflictRings.current.instanceMatrix.needsUpdate = true;
+    if (staleRings.current) staleRings.current.instanceMatrix.needsUpdate = true;
     // Fixed pleasant tilt.
     if (group.current) group.current.rotation.x = 0.32;
   }, [positions, dummy]);
@@ -184,6 +209,23 @@ export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, r
 
   const activeSet = useMemo(() => new Set(activeIds), [activeIds]);
   const citedSet = useMemo(() => new Set(citedIds), [citedIds]);
+  const staleSet = useMemo(() => new Set(staleIds), [staleIds]);
+  const conflictSet = useMemo(() => new Set(conflictPairs.flat()), [conflictPairs]);
+
+  // Red arcs directly between conflicting document pairs — the map shows not
+  // just "something's off" but exactly which two sources disagree.
+  const conflictArcs = useMemo(() => {
+    const pts: number[] = [];
+    for (const [aId, bId] of conflictPairs) {
+      const a = posById.get(aId);
+      const b = posById.get(bId);
+      if (!a || !b) continue;
+      pts.push(...segmentsFromPolyline(arcPoints(a, b, 20)));
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pts), 3));
+    return geo;
+  }, [conflictPairs, posById]);
 
   useFrame((state, delta) => {
     // Fixed framing on the origin — never zoom out of the frame. A whisper of
@@ -208,15 +250,20 @@ export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, r
     // Retrieved → gold accent; else ink core with a teal glow. A subtle pulse,
     // and crisp (small) sizes so lit nodes read as accents, not blobs.
     const pulse = reducedMotion ? 1 : 1 + 0.08 * Math.sin(state.clock.elapsedTime * 3);
+    const conflictPulse = reducedMotion ? 1 : 1 + 0.15 * Math.sin(state.clock.elapsedTime * 4);
     const color = new THREE.Color();
     const halo = new THREE.Color();
+    const ring = new THREE.Color(SIGNAL_RED);
+    const staleRingColor = new THREE.Color(BRASS);
     nodes.forEach((n, i) => {
       const active = activeSet.has(n.id);
       const cited = citedSet.has(n.id);
       const hi = highlightedId === n.id;
+      const stale = staleSet.has(n.id);
+      const conflict = conflictSet.has(n.id);
       const lit = active || hi;
       color.set(lit ? BEACON : INK);
-      halo.set(lit ? BEACON : MERIDIAN);
+      halo.set(lit ? BEACON : stale ? BRASS : MERIDIAN);
       cores.current?.setColorAt(i, color);
       halos.current?.setColorAt(i, halo);
       const coreScale = (hi ? 0.12 : cited ? 0.1 : active ? 0.1 : 0.08) * (lit ? pulse : 1);
@@ -228,6 +275,22 @@ export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, r
       dummy.scale.setScalar(haloScale);
       dummy.updateMatrix();
       halos.current?.setMatrixAt(i, dummy.matrix);
+
+      conflictRings.current?.setColorAt(i, ring);
+      dummy.position.copy(positions[i]);
+      dummy.scale.setScalar(conflict ? 0.3 * conflictPulse : 0);
+      dummy.updateMatrix();
+      conflictRings.current?.setMatrixAt(i, dummy.matrix);
+
+      // A brass ring, independent of the core/halo — staleness must stay
+      // visible even when the node is lit gold (active/cited), which the
+      // halo color alone can't do since `lit` always wins there. Sized
+      // smaller than the conflict ring so both can show at once (nested).
+      staleRings.current?.setColorAt(i, staleRingColor);
+      dummy.position.copy(positions[i]);
+      dummy.scale.setScalar(stale ? 0.2 : 0);
+      dummy.updateMatrix();
+      staleRings.current?.setMatrixAt(i, dummy.matrix);
     });
     if (cores.current) {
       cores.current.instanceMatrix.needsUpdate = true;
@@ -236,6 +299,14 @@ export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, r
     if (halos.current) {
       halos.current.instanceMatrix.needsUpdate = true;
       if (halos.current.instanceColor) halos.current.instanceColor.needsUpdate = true;
+    }
+    if (conflictRings.current) {
+      conflictRings.current.instanceMatrix.needsUpdate = true;
+      if (conflictRings.current.instanceColor) conflictRings.current.instanceColor.needsUpdate = true;
+    }
+    if (staleRings.current) {
+      staleRings.current.instanceMatrix.needsUpdate = true;
+      if (staleRings.current.instanceColor) staleRings.current.instanceColor.needsUpdate = true;
     }
   });
 
@@ -253,6 +324,11 @@ export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, r
         <bufferGeometry ref={routeGeom} />
         <lineBasicMaterial ref={routeMat} color={BEACON} transparent opacity={0} depthWrite={false} />
       </lineSegments>
+      {conflictPairs.length > 0 && (
+        <lineSegments geometry={conflictArcs}>
+          <lineBasicMaterial color={SIGNAL_RED} transparent opacity={0.85} depthWrite={false} />
+        </lineSegments>
+      )}
       {/* Base colour is white so per-instance colours (ink / teal / gold) render
           true — a tinted base would multiply and muddy them. */}
       <instancedMesh ref={halos} args={[undefined, undefined, nodes.length]}>
@@ -262,6 +338,18 @@ export function AtlasGlobe({ nodes, activeIds, citedIds, highlightedId, focus, r
       <instancedMesh ref={cores} args={[undefined, undefined, nodes.length]}>
         <sphereGeometry args={[1, 14, 14]} />
         <meshBasicMaterial color="#ffffff" />
+      </instancedMesh>
+      {/* Red rings, scaled to zero except on nodes currently in a conflict. */}
+      <instancedMesh ref={conflictRings} args={[undefined, undefined, nodes.length]}>
+        <ringGeometry args={[0.85, 1, 24]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.75} depthWrite={false} side={THREE.DoubleSide} />
+      </instancedMesh>
+      {/* Brass rings, scaled to zero except on stale-evidence nodes. Smaller
+          radius than the conflict ring so a node that's both stale and
+          conflicting shows two nested rings, not one overwriting the other. */}
+      <instancedMesh ref={staleRings} args={[undefined, undefined, nodes.length]}>
+        <ringGeometry args={[0.8, 0.92, 24]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.85} depthWrite={false} side={THREE.DoubleSide} />
       </instancedMesh>
     </group>
   );

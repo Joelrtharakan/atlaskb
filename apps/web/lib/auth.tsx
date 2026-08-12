@@ -17,6 +17,7 @@ import {
 
 import { api } from "./api";
 import { clearTokens, getAccessToken, setTokens } from "./tokens";
+import type { TokenPair } from "./types";
 
 const EMAIL_KEY = "atlaskb.email";
 
@@ -27,6 +28,9 @@ type AuthState = {
   ready: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  /** Used by the OIDC callback page — tokens/email already came back from
+   *  the API's /auth/oidc/exchange, there's no password to submit here. */
+  loginWithTokens: (tokens: TokenPair, email: string) => void;
   logout: () => void;
 };
 
@@ -73,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [login],
   );
 
+  const loginWithTokens = useCallback((tokens: TokenPair, emailArg: string) => {
+    setTokens(tokens);
+    window.localStorage.setItem(EMAIL_KEY, emailArg);
+    setEmail(emailArg);
+  }, []);
+
   const logout = useCallback(() => {
     clearTokens();
     window.localStorage.removeItem(EMAIL_KEY);
@@ -80,8 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ email, isAuthenticated: email !== null, ready, login, signup, logout }),
-    [email, ready, login, signup, logout],
+    () => ({ email, isAuthenticated: email !== null, ready, login, signup, loginWithTokens, logout }),
+    [email, ready, login, signup, loginWithTokens, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

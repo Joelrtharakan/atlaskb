@@ -1,0 +1,289 @@
+{
+  "generated_at": "2026-08-11T10:53:51.093451+00:00",
+  "total_cases": 24,
+  "accuracy": 0.625,
+  "binary_contradicts_vs_rest": {
+    "true_positive": 12,
+    "false_positive": 0,
+    "false_negative": 3,
+    "true_negative": 9,
+    "precision": 1.0,
+    "recall": 0.8,
+    "f1": 0.889,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.2
+  },
+  "by_category": {
+    "obvious_contradiction": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    },
+    "subtle_contradiction": {
+      "total": 3,
+      "correct": 2,
+      "accuracy": 0.6666666666666666
+    },
+    "numeric_contradiction": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    },
+    "date_contradiction": {
+      "total": 3,
+      "correct": 2,
+      "accuracy": 0.6666666666666666
+    },
+    "policy_contradiction": {
+      "total": 3,
+      "correct": 2,
+      "accuracy": 0.6666666666666666
+    },
+    "complementary_claims": {
+      "total": 3,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "unrelated_claims": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    },
+    "ambiguous_claims": {
+      "total": 3,
+      "correct": 0,
+      "accuracy": 0.0
+    }
+  },
+  "confusion_matrix": {
+    "SUPPORTS": {
+      "SUPPORTS": 0,
+      "CONTRADICTS": 0,
+      "COMPLEMENTS": 0,
+      "UNRELATED": 0,
+      "UNCERTAIN": 0
+    },
+    "CONTRADICTS": {
+      "SUPPORTS": 1,
+      "CONTRADICTS": 12,
+      "COMPLEMENTS": 0,
+      "UNRELATED": 2,
+      "UNCERTAIN": 0
+    },
+    "COMPLEMENTS": {
+      "SUPPORTS": 0,
+      "CONTRADICTS": 0,
+      "COMPLEMENTS": 0,
+      "UNRELATED": 1,
+      "UNCERTAIN": 2
+    },
+    "UNRELATED": {
+      "SUPPORTS": 0,
+      "CONTRADICTS": 0,
+      "COMPLEMENTS": 0,
+      "UNRELATED": 3,
+      "UNCERTAIN": 0
+    },
+    "UNCERTAIN": {
+      "SUPPORTS": 0,
+      "CONTRADICTS": 0,
+      "COMPLEMENTS": 1,
+      "UNRELATED": 2,
+      "UNCERTAIN": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "obvious-1",
+      "category": "obvious_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "deterministic",
+      "correct": true
+    },
+    {
+      "id": "obvious-2",
+      "category": "obvious_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "deterministic",
+      "correct": true
+    },
+    {
+      "id": "obvious-3",
+      "category": "obvious_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "deterministic",
+      "correct": true
+    },
+    {
+      "id": "subtle-1",
+      "category": "subtle_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "deterministic",
+      "correct": true
+    },
+    {
+      "id": "subtle-2",
+      "category": "subtle_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "SUPPORTS",
+      "method": "llm",
+      "correct": false
+    },
+    {
+      "id": "subtle-3",
+      "category": "subtle_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "llm",
+      "correct": true
+    },
+    {
+      "id": "numeric-1",
+      "category": "numeric_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "llm",
+      "correct": true
+    },
+    {
+      "id": "numeric-2",
+      "category": "numeric_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "deterministic",
+      "correct": true
+    },
+    {
+      "id": "numeric-3",
+      "category": "numeric_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "llm",
+      "correct": true
+    },
+    {
+      "id": "date-1",
+      "category": "date_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": false
+    },
+    {
+      "id": "date-2",
+      "category": "date_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "deterministic",
+      "correct": true
+    },
+    {
+      "id": "date-3",
+      "category": "date_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "deterministic",
+      "correct": true
+    },
+    {
+      "id": "policy-1",
+      "category": "policy_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "llm",
+      "correct": true
+    },
+    {
+      "id": "policy-2",
+      "category": "policy_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "CONTRADICTS",
+      "method": "llm",
+      "correct": true
+    },
+    {
+      "id": "policy-3",
+      "category": "policy_contradiction",
+      "expected": "CONTRADICTS",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": false
+    },
+    {
+      "id": "complement-1",
+      "category": "complementary_claims",
+      "expected": "COMPLEMENTS",
+      "predicted": "UNCERTAIN",
+      "method": "llm",
+      "correct": false
+    },
+    {
+      "id": "complement-2",
+      "category": "complementary_claims",
+      "expected": "COMPLEMENTS",
+      "predicted": "UNCERTAIN",
+      "method": "llm",
+      "correct": false
+    },
+    {
+      "id": "complement-3",
+      "category": "complementary_claims",
+      "expected": "COMPLEMENTS",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": false
+    },
+    {
+      "id": "unrelated-1",
+      "category": "unrelated_claims",
+      "expected": "UNRELATED",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": true
+    },
+    {
+      "id": "unrelated-2",
+      "category": "unrelated_claims",
+      "expected": "UNRELATED",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": true
+    },
+    {
+      "id": "unrelated-3",
+      "category": "unrelated_claims",
+      "expected": "UNRELATED",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": true
+    },
+    {
+      "id": "ambiguous-1",
+      "category": "ambiguous_claims",
+      "expected": "UNCERTAIN",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": false
+    },
+    {
+      "id": "ambiguous-2",
+      "category": "ambiguous_claims",
+      "expected": "UNCERTAIN",
+      "predicted": "COMPLEMENTS",
+      "method": "llm",
+      "correct": false
+    },
+    {
+      "id": "ambiguous-3",
+      "category": "ambiguous_claims",
+      "expected": "UNCERTAIN",
+      "predicted": "UNRELATED",
+      "method": "filtered",
+      "correct": false
+    }
+  ]
+}

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { AuroraBackground } from "@/components/shell/AuroraBackground";
 import { ApiError, api } from "@/lib/api";
@@ -25,6 +26,9 @@ const ADMIN_NAV = [
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/content-gaps", label: "Content Gaps" },
   { href: "/admin/evals", label: "Evals" },
+  { href: "/admin/feedback", label: "Feedback" },
+  { href: "/admin/audit-log", label: "Audit Log" },
+  { href: "/admin/connectors", label: "Connectors" },
 ];
 /** Always last — after the admin links when present, so Settings reads as
  *  "the one link that isn't part of the primary or admin workflow." */
@@ -153,6 +157,110 @@ function WorkspaceSwitcher() {
   );
 }
 
+/** Collapses the 6 admin-only links into one dropdown instead of 6 more
+ * items in the already-crowded primary nav — with core + admin + settings
+ * all as flat links, the nav ran out of room on ordinary window widths and
+ * the last couple of links (previously Settings, then Audit Log) silently
+ * clipped rather than wrapped, reading as broken/overlapping. */
+function AdminMenu({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const active = ADMIN_NAV.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e: MouseEvent) {
+      const target = e.target as Node;
+      // The menu is portaled to <body> (see below), so it's outside `ref`
+      // in the DOM tree even while open — check both, or every mousedown
+      // on a menu item would look "outside" and close the menu before its
+      // own onClick/navigation had a chance to run.
+      if (ref.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => {
+          // The nav this button lives in scrolls horizontally
+          // (overflow-x-auto), which per the CSS spec forces its
+          // overflow-y to clip too — an `absolute` dropdown here would be
+          // invisibly cut off. `position: fixed`, positioned from the
+          // button's real screen coordinates, sidesteps that entirely.
+          const rect = buttonRef.current?.getBoundingClientRect();
+          if (rect) setMenuPos({ top: rect.bottom + 4, left: rect.left });
+          setOpen((o) => !o);
+        }}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={
+          "shrink-0 border-b-2 px-2 py-1 font-mono text-xs uppercase tracking-cartouche " +
+          "transition-colors focus-visible:outline-none focus-visible:ring-2 " +
+          "focus-visible:ring-pewter focus-visible:ring-offset-2 focus-visible:ring-offset-linen " +
+          (active
+            ? "border-brass text-parchment"
+            : "border-transparent text-graphite hover:text-parchment")
+        }
+      >
+        Admin {open ? "▴" : "▾"}
+      </button>
+      {open && menuPos
+        ? createPortal(
+            // Portaled straight to <body>: the header's `backdrop-blur-md`
+            // establishes a CSS stacking context (backdrop-filter behaves
+            // like `transform` here), which traps any `position: fixed`
+            // descendant inside it regardless of z-index — the page content
+            // below (a later, sibling stacking context) would otherwise
+            // paint over the menu and swallow its clicks. A portal escapes
+            // that ancestor entirely instead of trying to out-rank it.
+            <div
+              ref={menuRef}
+              role="menu"
+              style={{ top: menuPos.top, left: menuPos.left }}
+              className="fixed z-50 min-w-[10rem] border border-graphite/30 bg-deep-chart/95 py-1 shadow-lg backdrop-blur-md"
+            >
+              {ADMIN_NAV.map((item) => {
+                const itemActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className={
+                      "block px-3 py-1.5 font-mono text-xs uppercase tracking-cartouche transition-colors " +
+                      (itemActive ? "text-parchment" : "text-graphite hover:text-parchment")
+                    }
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
 function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
     <Link
@@ -213,7 +321,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
           {/* Scrolls horizontally instead of wrapping if it ever runs out of
               room — the header always stays a single line. Grouped into
-              core workflow / admin / settings, each set off by a divider. */}
+              core workflow / admin, each set off by a divider. Settings
+              deliberately lives in the fixed right-hand cluster below, not
+              in this scrollable region — with 10+ links (core + all admin
+              links) it was the item most likely to run out of room and get
+              clipped right where the workspace switcher begins, reading as
+              an overlap even though it was really an overflow cutoff. */}
           <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
             {CORE_NAV.map((item) => (
               <NavLink
@@ -226,24 +339,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             {isAdmin ? (
               <>
                 <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-graphite/30" />
-                {ADMIN_NAV.map((item) => (
-                  <NavLink
-                    key={item.href}
-                    href={item.href}
-                    label={item.label}
-                    active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
-                  />
-                ))}
+                <AdminMenu pathname={pathname} />
               </>
             ) : null}
-            <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-graphite/30" />
+          </nav>
+          <div className="flex shrink-0 items-center gap-2.5">
             <NavLink
               href={SETTINGS_NAV.href}
               label={SETTINGS_NAV.label}
               active={pathname === SETTINGS_NAV.href || pathname.startsWith(`${SETTINGS_NAV.href}/`)}
             />
-          </nav>
-          <div className="flex shrink-0 items-center gap-2.5">
+            <span aria-hidden className="h-4 w-px bg-graphite/30" />
             <WorkspaceSwitcher />
             <span aria-hidden className="h-4 w-px bg-graphite/30" />
             {auth.email ? <UserBadge email={auth.email} /> : null}

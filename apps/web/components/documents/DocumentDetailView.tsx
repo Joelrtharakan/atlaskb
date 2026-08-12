@@ -13,6 +13,7 @@ import { useWorkspace } from "@/lib/workspace";
 import { AccessScopeControl } from "./AccessScopeControl";
 import { CoreSample } from "./CoreSample";
 import { SurveyGrid } from "./SurveyGrid";
+import { VersionHistory } from "./VersionHistory";
 
 const POLL_MS = 2000;
 
@@ -33,6 +34,7 @@ export function DocumentDetailView({ id }: { id: string }) {
   const [layers, setLayers] = useState<ChunkSample[] | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -81,6 +83,22 @@ export function DocumentDetailView({ id }: { id: string }) {
     () => layers?.find((l) => l.chunk_id === hovered) ?? null,
     [layers, hovered],
   );
+
+  async function handleRetry() {
+    if (retrying) return;
+    setRetrying(true);
+    try {
+      const updated = await api.retryDocument(id);
+      setDoc(updated);
+      setLayers(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Couldn't retry this document. Try again.",
+      );
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   return (
     <section className="mx-auto flex min-h-full max-w-4xl flex-col gap-6 p-4 sm:p-8">
@@ -193,6 +211,28 @@ export function DocumentDetailView({ id }: { id: string }) {
               </div>
             </div>
           ) : null}
+
+          {doc.status === "ready" && layers && layers.length === 0 ? (
+            <div className="rounded-lg border border-signal-red/50 bg-signal-red/5 p-4">
+              <p className="text-sm text-ink">
+                This document is marked ready but has no searchable content in its current
+                version — a survey inconsistency, not an empty file (a truly empty upload would
+                have failed instead). Retrying re-runs ingestion from the stored file.
+              </p>
+              {doc.can_manage_access ? (
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  disabled={retrying}
+                  className="mt-3 rounded-sm border border-signal-red/60 px-3 py-1.5 font-mono text-xs uppercase tracking-cartouche text-signal-red transition-colors hover:bg-signal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-red disabled:opacity-50"
+                >
+                  {retrying ? "Retrying…" : "Retry survey"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          <VersionHistory doc={doc} onReuploaded={setDoc} />
 
           {doc.can_manage_access && active ? (
             <AccessScopeControl documentId={doc.id} workspaceId={active.id} />

@@ -1,0 +1,58 @@
+{
+  "before": {
+    "generated_at": "2026-08-11T05:45:21.000632+00:00",
+    "model": "backend-configured",
+    "dataset_size": 17,
+    "corpus_size": 7,
+    "metrics": {
+      "answer_accuracy": 0.929,
+      "citation_grounding": 0.8,
+      "citation_coverage": 0.433,
+      "refusal_accuracy": 1.0,
+      "retrieval_hit_rate": 1.0,
+      "conflict_detection_accuracy": 0.75,
+      "permission_leakage": 0,
+      "avg_tokens_per_query": 1182.2,
+      "latency_p50_ms": 2998.6,
+      "latency_p95_ms": 15305.0
+    },
+    "permission_leakage_detail": {
+      "pass": true,
+      "restricted_chunk_ids": [
+        "656fd83c-49e4-4517-bfd6-170607c18adc"
+      ],
+      "viewer_search_status": 200,
+      "leaked_chunk_ids": [],
+      "outsider_search_status": 403,
+      "outsider_correctly_rejected": true
+    }
+  },
+  "after": {
+    "generated_at": "2026-08-11T05:48:01.362809+00:00",
+    "model": "backend-configured",
+    "dataset_size": 17,
+    "corpus_size": 7,
+    "metrics": {
+      "answer_accuracy": 0.929,
+      "citation_grounding": 0.857,
+      "citation_coverage": 0.75,
+      "refusal_accuracy": 1.0,
+      "retrieval_hit_rate": 1.0,
+      "conflict_detection_accuracy": 0.25,
+      "permission_leakage": 0,
+      "avg_tokens_per_query": 2167.8,
+      "latency_p50_ms": 6852.5,
+      "latency_p95_ms": 28135.5
+    },
+    "permission_leakage_detail": {
+      "pass": true,
+      "restricted_chunk_ids": [
+        "8a6b8c09-0996-400a-9eb1-012cebaaa7c3"
+      ],
+      "viewer_search_status": 200,
+      "leaked_chunk_ids": [],
+      "outsider_search_status": 403,
+      "outsider_correctly_rejected": true
+    }
+  }
+}

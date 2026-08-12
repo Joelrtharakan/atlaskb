@@ -8,7 +8,8 @@ import { layoutFromDocuments } from "@/components/living-atlas/layout";
 import { useCapabilities } from "@/components/living-atlas/use-capabilities";
 import { ContourProgress } from "@/components/ui/ContourProgress";
 import { ApiError, api } from "@/lib/api";
-import type { ChatResponse, DocumentOut } from "@/lib/types";
+import { formatDate } from "@/lib/format";
+import type { ChatResponse, Conflict, DocumentOut, Evidence } from "@/lib/types";
 
 import { numberSources, renderAnswerWithCitations } from "./citations";
 
@@ -27,17 +28,47 @@ const LivingAtlas = dynamic(() => import("@/components/living-atlas/LivingAtlas"
 type Entry =
   | { kind: "question"; id: string; at: string; text: string }
   | { kind: "pending"; id: string }
-  | { kind: "answer"; id: string; at: string; resp: ChatResponse }
+  | { kind: "answer"; id: string; at: string; resp: ChatResponse; question: string }
   | { kind: "error"; id: string; at: string; message: string };
 
 type AtlasState = {
   activeIds: string[];
   citedIds: string[];
+  staleIds: string[];
+  conflictPairs: [string, string][];
   focus: boolean;
   phase: "idle" | "retrieving" | "answered" | "settling";
 };
 
-const IDLE: AtlasState = { activeIds: [], citedIds: [], focus: false, phase: "idle" };
+const IDLE: AtlasState = {
+  activeIds: [],
+  citedIds: [],
+  staleIds: [],
+  conflictPairs: [],
+  focus: false,
+  phase: "idle",
+};
+
+/** Document ids whose evidence is aging — same > 0.5 threshold used everywhere
+ * else staleness is shown (Dashboard relief map, "Why this answer?"). */
+function staleDocIds(evidence: Evidence[] | undefined): string[] {
+  return Array.from(new Set((evidence ?? []).filter((e) => e.staleness > 0.5).map((e) => e.document_id)));
+}
+
+/** Every conflict's document_ids collapsed into unordered pairs — a 3+-way
+ * conflict (rare) fans out to every pairwise link rather than being dropped. */
+function conflictDocPairs(conflicts: ChatResponse["conflicts"]): [string, string][] {
+  const pairs: [string, string][] = [];
+  for (const c of conflicts ?? []) {
+    const ids = c.document_ids;
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        pairs.push([ids[i], ids[j]]);
+      }
+    }
+  }
+  return pairs;
+}
 
 // Timing for the "hold, then ease back" choreography after an answer lands.
 const HOLD_MS = 2600;
@@ -51,11 +82,285 @@ function uniq(xs: string[]): string[] {
   return Array.from(new Set(xs));
 }
 
+function fmtScore(n: number | null): string {
+  return n == null ? "—" : n.toFixed(2);
+}
+
+/** One line of the pipeline trace: a label and its outcome, in the same
+ * question → plan → retrieve → rerank → evidence → conflict → version order
+ * the agent itself actually runs in (see app/agent.py). */
+function TraceLine({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-2 text-[0.7rem] leading-relaxed text-graphite">
+      <span className="w-20 shrink-0 font-mono text-[0.62rem] uppercase tracking-cartouche text-graphite/70">
+        {label}
+      </span>
+      <span className="text-ink">{children}</span>
+    </li>
+  );
+}
+
+/** Which citation (if any) an evidence chunk actually supports — the CLAIM
+ * step of the CLAIM → CHUNK → DOCUMENT → VERSION → FRESHNESS → SCORES →
+ * CONFLICT chain (Trust Layer Phase 6). `undefined` under MAX_TRUST's
+ * non-cited evidence entries, which support no specific claim. */
+function claimForChunk(resp: ChatResponse, chunkId: string): string | undefined {
+  return resp.citations.find((c) => c.chunk_ids.includes(chunkId))?.claim;
+}
+
+/** Every conflict a chunk is one side of — a chunk can be `chunk_id_a` in one
+ * pair and `chunk_id_b` in another, so this returns all matches, not just
+ * the first. */
+function conflictsForChunk(conflicts: Conflict[], chunkId: string): Conflict[] {
+  return conflicts.filter((c) => c.chunk_id_a === chunkId || c.chunk_id_b === chunkId);
+}
+
+/**
+ * "Why this answer?" — a two-part trace: first the pipeline itself (what the
+ * agent actually did, in order: query planning → retrieval → reranking →
+ * evidence selection → conflict check → version), then, per source, the full
+ * CLAIM → SUPPORTING CHUNK → DOCUMENT → VERSION → FRESHNESS → DENSE/SPARSE/
+ * RERANK SCORES → CONFLICT STATUS chain (Trust Layer Phase 6) — deliberately
+ * never collapsed into one number, the reader judges each link themselves.
+ */
+function WhyThisAnswer({ resp, question }: { resp: ChatResponse; question: string }) {
+  const [open, setOpen] = useState(false);
+  const evidence = resp.evidence ?? [];
+  if (evidence.length === 0) return null;
+  const conflicts = resp.conflicts ?? [];
+
+  const searchedQuery = resp.queries?.[0];
+  const wasRewritten =
+    !!searchedQuery && searchedQuery.trim().toLowerCase() !== question.trim().toLowerCase();
+  const distinctDocs = uniq(resp.retrieved.map((r) => r.document_id)).length;
+  const wasReranked = resp.retrieved.some((r) => r.rerank_score != null);
+  const conflictsChecked = distinctDocs >= 2;
+  const currentVersions = evidence.filter((e) => e.is_current_version).length;
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="marginalia text-[0.65rem] uppercase tracking-cartouche text-graphite hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
+      >
+        {open ? "▾" : "▸"} Why this answer?
+      </button>
+      {open ? (
+        <div className="mt-2 flex flex-col gap-3">
+          <ol className="flex flex-col gap-1 border-l border-graphite/25 pl-2">
+            {wasRewritten ? (
+              <TraceLine label="Query">Rewrote your question to &ldquo;{searchedQuery}&rdquo;</TraceLine>
+            ) : null}
+            <TraceLine label="Retrieve">
+              {resp.retrieved.length} candidate{resp.retrieved.length === 1 ? "" : "s"} across{" "}
+              {distinctDocs} document{distinctDocs === 1 ? "" : "s"}
+            </TraceLine>
+            {wasReranked ? (
+              <TraceLine label="Rerank">Reordered candidates by relevance</TraceLine>
+            ) : null}
+            <TraceLine label="Evidence">
+              {evidence.length} source{evidence.length === 1 ? "" : "s"}
+              {resp.trust_mode === "MAX_TRUST" ? " traced (complete — every retrieved chunk)" : " selected for citation"}
+            </TraceLine>
+            {conflictsChecked ? (
+              <TraceLine label="Conflicts">
+                {conflicts.length > 0
+                  ? `${conflicts.length} found — see "Sources disagree" above`
+                  : "None detected"}
+              </TraceLine>
+            ) : null}
+            <TraceLine label="Version">
+              {currentVersions === evidence.length
+                ? "All sources are the current version"
+                : `${evidence.length - currentVersions} of ${evidence.length} source(s) from a superseded version`}
+            </TraceLine>
+          </ol>
+          <ul className="flex flex-col gap-3">
+            {evidence.map((e) => {
+              const claim = claimForChunk(resp, e.chunk_id);
+              const chunkConflicts = conflictsForChunk(conflicts, e.chunk_id);
+              return (
+                <li
+                  key={e.chunk_id}
+                  className={`border-l pl-2 text-[0.7rem] leading-relaxed text-graphite ${
+                    chunkConflicts.length > 0 ? "border-signal-red/50" : "border-graphite/25"
+                  }`}
+                >
+                  {e.is_cited === false ? (
+                    <p className="marginalia text-[0.62rem] uppercase tracking-cartouche text-graphite/60">
+                      retrieved, not cited
+                    </p>
+                  ) : null}
+                  {claim ? <p className="italic text-ink">&ldquo;{claim}&rdquo;</p> : null}
+                  <p className="text-ink">
+                    {e.filename}
+                    {e.page_num != null ? ` · page ${e.page_num}` : e.section ? ` · ${e.section}` : ""}
+                  </p>
+                  <p>{e.version_number != null ? `version ${e.version_number}` : "version unknown"}</p>
+                  <p className={e.staleness > 0.5 ? "text-brass" : ""}>
+                    {e.last_verified_at
+                      ? `verified ${formatDate(e.last_verified_at)}`
+                      : e.staleness > 0.5
+                        ? "never verified — aging"
+                        : "not yet verified"}
+                  </p>
+                  <p>
+                    dense {fmtScore(e.dense_score)} · sparse {fmtScore(e.sparse_score)} · rerank{" "}
+                    {fmtScore(e.rerank_score)}
+                  </p>
+                  <p className={chunkConflicts.length > 0 ? "font-medium text-signal-red" : ""}>
+                    {chunkConflicts.length > 0
+                      ? `conflict detected · confidence ${
+                          chunkConflicts[0].confidence != null
+                            ? `${Math.round(chunkConflicts[0].confidence * 100)}%`
+                            : "—"
+                        }`
+                      : "no conflict detected"}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Thumbs up/down on one answer. Optimistic — the rating is local until the
+ * request lands, and reverts if it fails, since a stale "thanks!" is worse
+ * than a moment of lag. */
+function FeedbackButtons({ messageId }: { messageId: string }) {
+  const [rating, setRating] = useState<"up" | "down" | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function rate(next: "up" | "down") {
+    if (pending) return;
+    const prev = rating;
+    setRating(next);
+    setPending(true);
+    try {
+      await api.rateMessage(messageId, next);
+    } catch {
+      setRating(prev);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => rate("up")}
+        disabled={pending}
+        aria-pressed={rating === "up"}
+        aria-label="This answer looks right"
+        className={`rounded-sm border px-1.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter disabled:opacity-50 ${
+          rating === "up"
+            ? "border-verdigris bg-verdigris/15 text-verdigris"
+            : "border-graphite/30 text-graphite hover:text-ink"
+        }`}
+      >
+        ▲
+      </button>
+      <button
+        type="button"
+        onClick={() => rate("down")}
+        disabled={pending}
+        aria-pressed={rating === "down"}
+        aria-label="This answer looks wrong"
+        className={`rounded-sm border px-1.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter disabled:opacity-50 ${
+          rating === "down"
+            ? "border-brass bg-brass/15 text-brass"
+            : "border-graphite/30 text-graphite hover:text-ink"
+        }`}
+      >
+        ▼
+      </button>
+    </div>
+  );
+}
+
+/** Trust Layer Phase 5: structured trust signals, not a single fabricated
+ * percentage — every value here is read straight off `resp.trust_summary`,
+ * itself computed server-side from real evidence (app/trust_summary.py).
+ * Weak grounding renders as "Low"/"Unknown", never smoothed into a falsely
+ * reassuring label. */
+function TrustSummaryBlock({ resp }: { resp: ChatResponse }) {
+  const t = resp.trust_summary;
+  if (!t) return null;
+  const rows: [string, string][] = [
+    [
+      "Citation coverage",
+      t.citation_coverage != null ? `${Math.round(t.citation_coverage * 100)}%` : "—",
+    ],
+    ["Citation quality", t.citation_quality],
+    ["Source freshness", t.source_freshness],
+    ["Version", t.version],
+    ["Conflicts", t.conflicts_detected > 0 ? `${t.conflicts_detected} detected` : "None detected"],
+    ["Evidence completeness", t.evidence_completeness],
+    ["Permission check", t.permission_check],
+  ];
+  const weak = (v: string) => v === "Low" || v === "Unknown";
+  return (
+    <div className="mt-3 border border-graphite/25 px-3 py-2">
+      <p className="marginalia text-[0.65rem] uppercase tracking-cartouche text-graphite">Trust summary</p>
+      <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex items-baseline justify-between gap-2 text-[0.7rem]">
+            <dt className="text-graphite">{label}</dt>
+            <dd className={weak(value) ? "font-medium text-brass" : "text-ink"}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/** Side-by-side conflicting claims (Trust Layer Phase 6) — never merged into
+ * one blended statement. Falls back to the older topic/description-only
+ * shape if `claim_a`/`claim_b` are absent (a cached pre-Phase-1 response). */
+function ConflictsPanel({ conflicts }: { conflicts: Conflict[] }) {
+  if (conflicts.length === 0) return null;
+  return (
+    <div className="mt-3 flex flex-col gap-3">
+      {conflicts.map((c, i) => (
+        <div key={i} className="border border-signal-red/50 bg-signal-red/5 px-3 py-2">
+          <p className="marginalia text-[0.65rem] uppercase tracking-cartouche text-signal-red">
+            Sources disagree — {c.topic}
+          </p>
+          {c.claim_a && c.claim_b ? (
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="border-l-2 border-graphite/40 pl-2">
+                <p className="marginalia text-[0.6rem] uppercase tracking-cartouche text-graphite">Source A</p>
+                <p className="text-xs leading-relaxed text-ink">&ldquo;{c.claim_a}&rdquo;</p>
+              </div>
+              <div className="border-l-2 border-graphite/40 pl-2">
+                <p className="marginalia text-[0.6rem] uppercase tracking-cartouche text-graphite">Source B</p>
+                <p className="text-xs leading-relaxed text-ink">&ldquo;{c.claim_b}&rdquo;</p>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-1 text-xs leading-relaxed text-ink">{c.description}</p>
+          )}
+          <p className="mt-2 text-[0.65rem] font-medium text-signal-red">
+            Conflict detected · confidence {c.confidence != null ? `${Math.round(c.confidence * 100)}%` : "—"}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AnswerEntry({
   resp,
+  question,
   onHoverDoc,
 }: {
   resp: ChatResponse;
+  question: string;
   onHoverDoc: (documentId: string | null) => void;
 }) {
   const { order } = numberSources(resp);
@@ -96,6 +401,10 @@ function AnswerEntry({
           </ul>
         </div>
       ) : null}
+      <TrustSummaryBlock resp={resp} />
+      <ConflictsPanel conflicts={resp.conflicts ?? []} />
+      <WhyThisAnswer resp={resp} question={question} />
+      {resp.message_id ? <FeedbackButtons messageId={resp.message_id} /> : null}
     </div>
   );
 }
@@ -109,10 +418,57 @@ export function ChatView() {
   const [atlas, setAtlas] = useState<AtlasState>(IDLE);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [atlasOpen, setAtlasOpen] = useState(true);
+  // Desktop-only draggable split between the answer panel and the Living
+  // Atlas — the atlas previously had a fixed 420px width, too cramped for
+  // the 3D scene on some layouts and not adjustable at all. Persisted so a
+  // resize sticks across reloads, same localStorage-preference pattern
+  // lib/motion.ts already uses for "Atlas motion".
+  const [atlasWidth, setAtlasWidth] = useState(() => {
+    if (typeof window === "undefined") return 420;
+    const stored = Number(window.localStorage.getItem("atlaskb.atlasWidth"));
+    return Number.isFinite(stored) && stored >= 280 && stored <= 900 ? stored : 420;
+  });
+  const [isDesktop, setIsDesktop] = useState(false);
+  const resizing = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const endRef = useRef<HTMLDivElement>(null);
   const reqId = useRef(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)"); // Tailwind's `lg`
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const onResizeStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      resizing.current = { startX: e.clientX, startWidth: atlasWidth };
+      const onMove = (ev: PointerEvent) => {
+        if (!resizing.current) return;
+        // The atlas pane sits to the right of the handle — dragging left
+        // (negative delta) grows it, dragging right shrinks it.
+        const delta = ev.clientX - resizing.current.startX;
+        const next = Math.min(900, Math.max(280, resizing.current.startWidth - delta));
+        setAtlasWidth(next);
+      };
+      const onUp = () => {
+        resizing.current = null;
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        setAtlasWidth((w) => {
+          window.localStorage.setItem("atlaskb.atlasWidth", String(w));
+          return w;
+        });
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [atlasWidth],
+  );
 
   const { nodes, edges } = useMemo(
     () => layoutFromDocuments((docs ?? []).map((d) => ({ id: d.id, filename: d.filename }))),
@@ -167,7 +523,7 @@ export function ChatView() {
     setPending(true);
     setHighlightedId(null);
     // Focus the (as yet unknown) cluster immediately so the camera starts easing.
-    setAtlas({ activeIds: [], citedIds: [], focus: true, phase: "retrieving" });
+    setAtlas({ activeIds: [], citedIds: [], staleIds: [], conflictPairs: [], focus: true, phase: "retrieving" });
 
     // /search returns retrieval-only results fast (no LLM) → drive the camera and
     // threads as soon as retrieval is known, before the answer is generated.
@@ -191,11 +547,15 @@ export function ChatView() {
       );
       if (reqId.current === id) {
         setEntries((prev) =>
-          prev.map((entry) => (entry.id === pid ? { kind: "answer", id: pid, at: now(), resp } : entry)),
+          prev.map((entry) =>
+            entry.id === pid ? { kind: "answer", id: pid, at: now(), resp, question: text } : entry,
+          ),
         );
         setAtlas({
           activeIds: retrievedDocs,
           citedIds: citedDocs,
+          staleIds: staleDocIds(resp.evidence),
+          conflictPairs: conflictDocPairs(resp.conflicts),
           focus: true,
           phase: "answered",
         });
@@ -225,9 +585,33 @@ export function ChatView() {
     // real, full-height box to fill (a flex row would otherwise collapse to the
     // short panel's height).
     <div className="flex h-full flex-col lg:flex-row">
-      {/* --- The Living Atlas (collapsible) or its 2D fallback. --- */}
+      {/* --- The Living Atlas (collapsible) or its 2D fallback. ---
+          Phase 12: secondary explainability, not the default focus — the
+          answer panel below carries `order-1` so Answer → Citations → Trust
+          Summary → Conflicts → Evidence are always read (and, on desktop,
+          laid out) before the atlas, without physically reordering this
+          JSX. Atlas/2D-fallback/reduced-motion behavior is unchanged. */}
       {atlasOpen ? (
-      <div className="relative h-[38vh] shrink-0 border-b border-graphite/25 lg:h-auto lg:flex-1 lg:border-b-0 lg:border-r">
+      <div
+        className="relative order-2 h-[38vh] shrink-0 border-t border-graphite/25 lg:h-auto lg:flex-none lg:border-t-0 lg:border-l"
+        style={isDesktop ? { width: atlasWidth } : undefined}
+      >
+        {/* Drag to resize (desktop only) — the atlas previously had a fixed
+            420px width with no way to give the 3D scene more room. */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize the Living Atlas panel"
+          tabIndex={0}
+          onPointerDown={onResizeStart}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") setAtlasWidth((w) => Math.min(900, w + 20));
+            if (e.key === "ArrowRight") setAtlasWidth((w) => Math.max(280, w - 20));
+          }}
+          className="absolute -left-1.5 top-0 z-20 hidden h-full w-3 cursor-col-resize touch-none items-center justify-center lg:flex focus-visible:outline-none"
+        >
+          <span aria-hidden className="h-10 w-0.5 rounded-full bg-graphite/40" />
+        </div>
         <button
           type="button"
           onClick={() => setAtlasOpen(false)}
@@ -256,6 +640,8 @@ export function ChatView() {
             highlightedId={highlightedId}
             focus={atlas.focus}
             reducedMotion={capabilities.reducedMotion}
+            staleIds={atlas.staleIds}
+            conflictPairs={atlas.conflictPairs}
           />
         ) : (
           // Decorative WebGL: the answer panel is the accessible source of truth,
@@ -271,6 +657,8 @@ export function ChatView() {
               highlightedId={highlightedId}
               focus={atlas.focus}
               reducedMotion={capabilities.reducedMotion}
+              staleIds={atlas.staleIds}
+              conflictPairs={atlas.conflictPairs}
             />
           </div>
         )}
@@ -282,17 +670,18 @@ export function ChatView() {
         <button
           type="button"
           onClick={() => setAtlasOpen(true)}
-          className="flex shrink-0 items-center gap-2 border-b border-graphite/25 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-cartouche text-graphite hover:text-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass lg:h-auto lg:w-10 lg:flex-col lg:justify-center lg:border-b-0 lg:border-r"
+          className="order-2 flex shrink-0 items-center gap-2 border-t border-graphite/25 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-cartouche text-graphite hover:text-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass lg:h-auto lg:w-10 lg:flex-col lg:justify-center lg:border-t-0 lg:border-l"
         >
           <span aria-hidden>▸</span>
           <span className="lg:[writing-mode:vertical-rl]">Living Atlas</span>
         </button>
       )}
 
-      {/* --- The answer panel (always fully functional). --- */}
-      {/* flex-1 in the stacked column (takes the height below the atlas) and a
-          fixed-width column on desktop; min-h-0 lets the transcript scroll. */}
-      <aside className="flex min-h-0 w-full flex-1 flex-col lg:w-[420px] lg:flex-none">
+      {/* --- The answer panel: Answer → Citations → Trust Summary →
+          Conflicts → Evidence (Trust Layer Phase 12) — primary, always
+          fully functional, and now `order-1` so it's read/laid out before
+          the atlas in both the mobile stack and the desktop row. --- */}
+      <aside className="order-1 flex min-h-0 w-full flex-1 flex-col">
         <div
           role="log"
           aria-label="Question and answer log"
@@ -343,7 +732,7 @@ export function ChatView() {
                   <li key={entry.id} className="chat-enter flex flex-col items-start gap-1">
                     <span className="marginalia text-[0.7rem]">{entry.at} · answer</span>
                     <div className="max-w-[92%]">
-                      <AnswerEntry resp={entry.resp} onHoverDoc={setHighlightedId} />
+                      <AnswerEntry resp={entry.resp} question={entry.question} onHoverDoc={setHighlightedId} />
                     </div>
                   </li>
                 );

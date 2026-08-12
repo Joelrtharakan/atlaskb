@@ -94,6 +94,91 @@ class Settings(BaseSettings):
     # --- Retrieval ---
     retrieval_top_k: int = 3
     rrf_k: int = 60
+    # Component-toggle flags (Trust Layer T9.0) — for the eval/ablation harness
+    # ONLY, set via environment/.env before the process starts. Never exposed as
+    # a per-request override, so a real user can never change these.
+    #   retrieval_mode: "hybrid" (default, dense+sparse+RRF) | "dense_only"
+    #     (skips the sparse/BM25 query and RRF fusion entirely) | "sparse_only"
+    #     (skips the dense pgvector query and query embedding entirely).
+    retrieval_mode: str = "hybrid"
+    # Retrieval scoped to each document's current version only (Phase T1). False
+    # reproduces pre-T1 behavior: every version's chunks are searchable at once.
+    version_aware_retrieval: bool = True
+    # Cross-document conflict detection (Phase T4). False reproduces pre-T4
+    # behavior: no conflict-check LLM call is ever made.
+    conflict_detection_enabled: bool = True
+    # Per-stage timing breakdown on ChatResponse.timing (Trust Layer T9.5),
+    # for the eval harness only — off by default so a normal client never gets
+    # internal stage timings in its response payload.
+    expose_timing: bool = False
+
+    # --- Conflict detection (Trust Layer Phase 1: structured pipeline) ---
+    # Empty string -> falls back to llm_model. Lets relationship classification
+    # run on a smaller/faster model than generation (execution rule: "do not
+    # force conflict detection to use the generation model").
+    conflict_detection_model: str = ""
+    # Candidate pairs are ranked by lexical/topic similarity and only the top N
+    # are ever sent to the LLM, so classification cost stays bounded regardless
+    # of how many chunks were retrieved (never O(n^2) LLM calls).
+    conflict_max_candidate_pairs: int = 8
+    # Minimum entity-overlap (Jaccard) similarity for a cross-document claim
+    # pair to be considered a conflict candidate at all — below this, claims
+    # are assumed to be about different subjects and never reach the LLM.
+    # 0.05, not a rounder-looking 0.1+: measured against
+    # eval/conflicts/dataset.json, every genuinely-unrelated pair in that
+    # benchmark scores exactly 0.0 similarity, while several real
+    # (differently-worded) conflicts score as low as 0.06-0.10 — so 0.05 is
+    # the highest threshold that doesn't cost real recall on this benchmark,
+    # not an arbitrary round number. See eval/conflicts/README.md.
+    conflict_candidate_min_similarity: float = 0.05
+    # Confidence assigned to deterministic (non-LLM) classifications — see
+    # app/conflict_detection/deterministic.py for exactly what triggers each
+    # and eval/conflicts/README.md for how these were chosen (fixed constants,
+    # not learned/calibrated against a validation curve — documented as such).
+    conflict_deterministic_numeric_confidence: float = 0.9
+    conflict_deterministic_date_confidence: float = 0.85
+    conflict_deterministic_agreement_confidence: float = 0.85
+
+    @property
+    def conflict_model(self) -> str:
+        """Active conflict-classification model — a dedicated, possibly
+        smaller/faster model if configured, else the generation model."""
+        return self.conflict_detection_model or self.llm_model
+
+    # --- Content-gap cause classification (Trust Layer Phase 7) ---
+    # Cross-encoder rerank scores are unbounded but roughly centered on 0 for
+    # the default ms-marco model (negative = judged irrelevant) — a judgment
+    # call for "too weak to count as real coverage", not a calibrated
+    # probability. See app/content_gaps.py's classification docstring.
+    content_gap_weak_evidence_rerank_threshold: float = 0.0
+    # Above this staleness (0..1, same scale as Document.staleness), a gap's
+    # closest-matching source is classified OUTDATED_DOCUMENT rather than
+    # treated as valid current coverage.
+    content_gap_staleness_threshold: float = 0.8
+
+    # --- Trust modes (Trust Layer Phase 4) ---
+    # MAX_TRUST widens the conflict-detection candidate net relative to the
+    # BALANCED defaults above — passed as per-call overrides (never a global
+    # mutation of the settings above, which are shared across concurrent
+    # requests) by app.routers.chat when body.trust_mode == "MAX_TRUST".
+    max_trust_candidate_min_similarity: float = 0.0
+    max_trust_max_candidate_pairs: int = 20
+
+    # --- Reranking ---
+    # Second-stage relevance scoring over RRF's fused candidate pool, before
+    # truncating to top_k. RRF blends dense/sparse *rank position* only — it has
+    # no notion of how much better one candidate is than another. A cross-encoder
+    # reads the query and a chunk's text together and scores relevance directly,
+    # correcting RRF's ordering before the final top_k is chosen.
+    #   "cross-encoder" -> sentence-transformers CrossEncoder, in-process, no API key.
+    #   "fake"          -> deterministic term-overlap scoring, for fast tests only.
+    rerank_enabled: bool = True
+    rerank_backend: str = "cross-encoder"
+    rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    rerank_device: str = "cpu"
+    # How many RRF-fused candidates get reranked before truncating to top_k.
+    # Wider than top_k so the cross-encoder can promote a match RRF ranked lower.
+    rerank_candidate_k: int = 20
 
     # --- Freshness / staleness (display only) ---
     # A document is considered fully stale once it is this many days past its
@@ -129,9 +214,64 @@ class Settings(BaseSettings):
     web_base_url: str = "http://localhost:3000"
 
     # --- Admin / evals ---
-    # Where the eval runner writes its latest results (repo-relative, read by the
-    # /admin/evals endpoint). Resolved from the process CWD (repo root in dev).
+    # Where the eval runner writes its latest results, read by the
+    # /admin/evals endpoint. Anchored at the repo root, same as upload_dir
+    # above and for the same reason: the API is normally launched with
+    # `uv run --project apps/api`, whose CWD is apps/api, not the repo root —
+    # a bare relative path here silently pointed at apps/api/eval/results/,
+    # which never existed, so /admin/evals always read as unavailable even
+    # with real results sitting one directory up (found while building T9.8).
     eval_results_path: str = "eval/results/latest.json"
+
+    @field_validator("eval_results_path")
+    @classmethod
+    def _absolutize_eval_results_path(cls, value: str) -> str:
+        p = Path(value)
+        return str(p if p.is_absolute() else (_REPO_ROOT / p))
+
+    # --- Connectors: Google Drive (Trust Layer Phase 11) ---
+    # OAuth client registered by the workspace owner in Google Cloud Console
+    # (APIs & Services > Credentials > OAuth client ID > Web application).
+    # Empty by default: the connectors router refuses to start an OAuth flow
+    # until these are set, rather than failing deep inside the Google client.
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    # Must exactly match a redirect URI registered on the OAuth client.
+    google_redirect_uri: str = "http://localhost:8000/connectors/google/callback"
+    # Symmetric key (Fernet, url-safe base64, 32 bytes) encrypting each
+    # ConnectorConfig's refresh token before it's stored in credentials_ref.
+    # Generate with: python -c "from cryptography.fernet import Fernet;
+    # print(Fernet.generate_key().decode())". Required only once a Drive
+    # connector is actually created; not needed for the rest of the app.
+    connector_token_key: str = ""
+
+    # --- Auth: SSO / OIDC (Trust Layer Phase 11) ---
+    # Generic OIDC — works with any standards-compliant provider (Google
+    # Workspace, Okta, Azure AD, ...) via its discovery document, not
+    # provider-specific code. Empty issuer/client_id means SSO is off:
+    # /auth/oidc/config reports disabled and the login/callback endpoints
+    # refuse to start a flow, same pattern as the Drive connector's
+    # GOOGLE_CLIENT_ID gate.
+    oidc_issuer: str = ""
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_redirect_uri: str = "http://localhost:8000/auth/oidc/callback"
+
+    @property
+    def oidc_enabled(self) -> bool:
+        return bool(self.oidc_issuer and self.oidc_client_id and self.oidc_client_secret)
+
+    # --- LLM generation concurrency (Trust Layer T11.1) ---
+    # Real ceiling is provider/hardware-specific, not something the app can
+    # infer — 1 matches local Ollama on typical (non-GPU-dedicated) dev
+    # hardware, where a single generation already saturates it. Raise this
+    # explicitly for a hosted provider or beefier local inference hardware.
+    llm_concurrency_enabled: bool = True
+    llm_concurrency_limit: int = 1
+    # How long a request waits for a free generation slot before it gets a
+    # clean 429 instead of eventually timing out against the LLM itself.
+    llm_concurrency_queue_timeout_seconds: float = 20.0
+    llm_concurrency_prefix: str = "atlaskb:llmconcurrency"
 
 
 settings = Settings()

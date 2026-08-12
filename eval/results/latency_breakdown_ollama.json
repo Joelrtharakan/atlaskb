@@ -1,0 +1,231 @@
+{
+  "label": "ollama",
+  "generated_at": "2026-08-11T07:37:48.533205+00:00",
+  "questions_run": 15,
+  "stage_stats": {
+    "condense": {
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "mean_ms": 0.0,
+      "n": 15
+    },
+    "retrieval": {
+      "p50_ms": 17.1,
+      "p95_ms": 9109.2,
+      "mean_ms": 625.3,
+      "n": 15
+    },
+    "reranking": {
+      "p50_ms": 64.6,
+      "p95_ms": 7811.6,
+      "mean_ms": 582.5,
+      "n": 15
+    },
+    "generation": {
+      "p50_ms": 4027.3,
+      "p95_ms": 7866.9,
+      "mean_ms": 4443.6,
+      "n": 15
+    },
+    "conflict_detection": {
+      "p50_ms": 4481.8,
+      "p95_ms": 5154.5,
+      "mean_ms": 4145.4,
+      "n": 15
+    },
+    "auth": {
+      "p50_ms": 4.0,
+      "p95_ms": 7.4,
+      "mean_ms": 4.1,
+      "n": 15
+    },
+    "total": {
+      "p50_ms": 8651.6,
+      "p95_ms": 30000.1,
+      "mean_ms": 9837.9,
+      "n": 15
+    }
+  },
+  "rows": [
+    {
+      "question": "What is the capital of Zubrowka?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 9109.2,
+        "reranking": 7811.6,
+        "generation": 7866.9,
+        "conflict_detection": 5154.5,
+        "auth": 7.2,
+        "total": 30000.1
+      }
+    },
+    {
+      "question": "What currency does Zubrowka use?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 40.5,
+        "reranking": 76.2,
+        "generation": 3845.9,
+        "conflict_detection": 4284.9,
+        "auth": 7.4,
+        "total": 8271.9
+      }
+    },
+    {
+      "question": "What kind of railways is Zubrowka known for?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 12.4,
+        "reranking": 64.6,
+        "generation": 3657.4,
+        "conflict_detection": 4593.4,
+        "auth": 4.0,
+        "total": 8360.4
+      }
+    },
+    {
+      "question": "Who was the concierge of the Grand Budapest Hotel?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 15.0,
+        "reranking": 51.6,
+        "generation": 4027.3,
+        "conflict_detection": 4517.3,
+        "auth": 2.4,
+        "total": 8824.3
+      }
+    },
+    {
+      "question": "In which town is the Grand Budapest Hotel located?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 14.0,
+        "reranking": 52.1,
+        "generation": 3785.1,
+        "conflict_detection": 4032.3,
+        "auth": 3.6,
+        "total": 7910.6
+      }
+    },
+    {
+      "question": "How is the Grand Budapest Hotel reached from the village below?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 12.8,
+        "reranking": 54.6,
+        "generation": 3771.1,
+        "conflict_detection": 4741.7,
+        "auth": 4.5,
+        "total": 8600.6
+      }
+    },
+    {
+      "question": "How does AtlasKB combine dense and sparse retrieval?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 15.5,
+        "reranking": 57.9,
+        "generation": 6003.6,
+        "conflict_detection": 4481.8,
+        "auth": 1.6,
+        "total": 10590.7
+      }
+    },
+    {
+      "question": "What does AtlasKB use for dense vector retrieval?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 21.1,
+        "reranking": 68.5,
+        "generation": 3418.3,
+        "conflict_detection": 3810.9,
+        "auth": 5.1,
+        "total": 7347.6
+      }
+    },
+    {
+      "question": "What does AtlasKB's agent check before writing an answer?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 22.3,
+        "reranking": 74.0,
+        "generation": 4342.2,
+        "conflict_detection": 1891.0,
+        "auth": 4.2,
+        "total": 6360.2
+      }
+    },
+    {
+      "question": "How many queries are included in the AtlasKB free tier?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 41.8,
+        "reranking": 107.3,
+        "generation": 4026.6,
+        "conflict_detection": 4449.8,
+        "auth": 4.8,
+        "total": 8651.6
+      }
+    },
+    {
+      "question": "What technology powers AtlasKB's semantic cache?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 20.5,
+        "reranking": 72.1,
+        "generation": 5044.6,
+        "conflict_detection": 1411.9,
+        "auth": 4.9,
+        "total": 6586.8
+      }
+    },
+    {
+      "question": "How many days of PTO does the HR policy allow per year?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 17.1,
+        "reranking": 53.0,
+        "generation": 3990.1,
+        "conflict_detection": 4913.3,
+        "auth": 3.8,
+        "total": 8994.1
+      }
+    },
+    {
+      "question": "Does the Northwind Engineering Handbook say PTO is unlimited?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 10.2,
+        "reranking": 55.7,
+        "generation": 4132.6,
+        "conflict_detection": 4893.8,
+        "auth": 3.4,
+        "total": 9116.4
+      }
+    },
+    {
+      "question": "According to the April 2025 all-hands notes, how many days per month does PTO accrue under the current company-wide policy?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 17.5,
+        "reranking": 80.2,
+        "generation": 4188.3,
+        "conflict_detection": 4767.7,
+        "auth": 3.1,
+        "total": 9072.1
+      }
+    },
+    {
+      "question": "How much PTO do employees get?",
+      "timing": {
+        "condense": 0.0,
+        "retrieval": 9.1,
+        "reranking": 57.7,
+        "generation": 4553.9,
+        "conflict_detection": 4237.4,
+        "auth": 1.7,
+        "total": 8880.5
+      }
+    }
+  ]
+}

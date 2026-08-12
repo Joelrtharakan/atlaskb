@@ -31,7 +31,7 @@ test("signup, upload, ask, and get a cited answer", async ({ page }) => {
   await page.getByRole("button", { name: /^upload$/i }).click();
 
   // The row appears and settles to "ready" once the worker finishes ingesting.
-  const row = page.getByRole("row", { name: /zubrowka\.md/i });
+  const row = page.getByRole("listitem").filter({ hasText: /zubrowka\.md/i });
   await expect(row).toBeVisible();
   await expect(row).toContainText("ready", { timeout: 90_000 });
 

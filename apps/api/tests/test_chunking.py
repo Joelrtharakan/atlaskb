@@ -2,6 +2,7 @@
 
 from app.chunking import (
     ParsedBlock,
+    _split_paragraphs,
     chunk_blocks,
     parse_html,
     parse_markdown,
@@ -55,6 +56,26 @@ def test_parse_markdown_tracks_sections():
     assert "Details" in sections
     details = next(b for b in blocks if b.section == "Details")
     assert "More text" in details.text
+
+
+def test_split_paragraphs_on_blank_lines():
+    text = "First paragraph line one.\nLine two.\n\nSecond paragraph.\n\n\nThird paragraph."
+    paras = _split_paragraphs(text)
+    assert paras == [
+        "First paragraph line one.\nLine two.",
+        "Second paragraph.",
+        "Third paragraph.",
+    ]
+
+
+def test_split_paragraphs_no_blank_lines_stays_one_block():
+    text = "Line one.\nLine two.\nLine three."
+    assert _split_paragraphs(text) == [text]
+
+
+def test_split_paragraphs_empty_text_yields_nothing():
+    assert _split_paragraphs("") == []
+    assert _split_paragraphs("   \n  ") == []
 
 
 def test_parse_html_tracks_sections_and_strips_scripts():

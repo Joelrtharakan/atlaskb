@@ -2,13 +2,13 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { ContourProgress } from "@/components/ui/ContourProgress";
 import { Field } from "@/components/ui/Field";
-import { ApiError } from "@/lib/api";
+import { API_BASE, ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 const AuthCompass = dynamic(
@@ -42,15 +42,32 @@ const COPY: Record<
   },
 };
 
+const SSO_ERROR_MESSAGES: Record<string, string> = {
+  invalid_state: "The sign-in attempt expired or was tampered with. Try again.",
+  sso_failed: "Your identity provider didn't accept the sign-in. Try again.",
+  email_not_verified: "Your identity provider hasn't verified your email address, so AtlasKB can't sign you in with it.",
+};
+
 export function AuthForm({ mode }: { mode: Mode }) {
   const copy = COPY[mode];
   const auth = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    () => {
+      const code = searchParams.get("error");
+      return code ? (SSO_ERROR_MESSAGES[code] ?? "Sign-in failed. Try again.") : null;
+    },
+  );
   const [pending, setPending] = useState(false);
+  const [ssoEnabled, setSsoEnabled] = useState(false);
+
+  useEffect(() => {
+    api.oidcConfig().then((c) => setSsoEnabled(c.enabled)).catch(() => setSsoEnabled(false));
+  }, []);
 
   // If a session already exists, skip the form.
   useEffect(() => {
@@ -143,6 +160,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 )}
               </Button>
             </form>
+
+            {ssoEnabled ? (
+              <>
+                <div className="mt-6 flex items-center gap-3" aria-hidden>
+                  <span className="h-px flex-1 bg-graphite/30" />
+                  <span className="font-mono text-[0.65rem] uppercase tracking-cartouche text-graphite">or</span>
+                  <span className="h-px flex-1 bg-graphite/30" />
+                </div>
+                <Button
+                  variant="outline"
+                  className="mt-6 w-full"
+                  onClick={() => window.location.assign(`${API_BASE}/auth/oidc/login`)}
+                >
+                  Continue with SSO →
+                </Button>
+              </>
+            ) : null}
 
             <p className="mt-6 text-sm text-graphite">
               {copy.altText}{" "}

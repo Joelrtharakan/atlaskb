@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import audit
+from app.cache import bump_workspace_epoch
 from app.config import settings
 from app.db import get_db
 from app.deps import get_current_user
@@ -147,6 +148,11 @@ def change_role(
     )
     db.commit()
     db.refresh(membership)
+    # Trust Layer Phase 8: a role change can change what this member is
+    # allowed to see — their (and everyone else's, since epochs are
+    # per-workspace not per-user) cached answers must not keep serving under
+    # the old permission set.
+    bump_workspace_epoch(workspace_id)
     email = db.scalar(select(User.email).where(User.id == user_id))
     return MemberOut(user_id=user_id, email=email or "", role=membership.role, joined_at=membership.joined_at)
 
@@ -172,6 +178,7 @@ def remove_member(
         db, workspace_id=workspace_id, user_id=user.id, action="member.remove", target=user_id
     )
     db.commit()
+    bump_workspace_epoch(workspace_id)
 
 
 @router.post("/{workspace_id}/invites", response_model=InviteOut, status_code=status.HTTP_201_CREATED)

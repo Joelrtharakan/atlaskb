@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_principal
-from app.models import Conversation, Message
+from app.models import Conversation, Message, MessageFeedback
 from app.rbac import Principal
 from app.schemas import ConversationDetail, ConversationOut, MessageOut
 
@@ -57,9 +57,26 @@ def get_conversation(
             .order_by(Message.created_at, role_order)
         )
     )
+    feedback_by_message = dict(
+        db.execute(
+            select(MessageFeedback.message_id, MessageFeedback.rating).where(
+                MessageFeedback.message_id.in_([m.id for m in messages]),
+                MessageFeedback.user_id == principal.user_id,
+            )
+        ).all()
+    )
     return ConversationDetail(
         id=convo.id,
         title=convo.title,
         created_at=convo.created_at,
-        messages=[MessageOut.model_validate(m) for m in messages],
+        messages=[
+            MessageOut(
+                id=m.id,
+                role=m.role,
+                content=m.content,
+                created_at=m.created_at,
+                feedback=feedback_by_message.get(m.id),
+            )
+            for m in messages
+        ],
     )

@@ -18,20 +18,28 @@ from app.deps import require_role
 from app.models import (
     ROLE_ADMIN,
     ApiKey,
+    AuditLog,
     Chunk,
     ContentGapResolution,
     Conversation,
     Document,
     Message,
+    MessageFeedback,
+    User,
     WorkspaceMembership,
 )
 from app.rbac import Principal
 from app.redis_client import get_redis
 from app.schemas import (
     AnalyticsResponse,
+    AuditLogEntryOut,
+    AuditLogResponse,
     ContentGap,
     ContentGapsResponse,
     DailyCount,
+    EvalHeadline,
+    FeedbackSummary,
+    FeedbackSummaryResponse,
     QueryVolumePoint,
     QueryVolumeResponse,
 )
@@ -110,18 +118,99 @@ def analytics(
     )
 
 
+def _eval_results_dir() -> Path:
+    # eval_results_path points at .../eval/results/latest.json; the sibling
+    # T9.1-T9.5 files (before_after, ablation, adversarial, prompt_injection,
+    # latency_breakdown) live in the same directory.
+    return Path(settings.eval_results_path).parent
+
+
+def _load_json(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _build_headline(results_dir: Path) -> EvalHeadline:
+    """Assemble the complete metrics picture purely from files on disk. Every
+    field traces to a real eval/results/*.json produced by T9.1-T9.5 — nothing
+    here is computed, estimated, or typed in by hand."""
+    found: list[str] = []
+    missing: list[str] = []
+
+    def load(name: str) -> dict[str, Any] | None:
+        data = _load_json(results_dir / name)
+        (found if data is not None else missing).append(name)
+        return data
+
+    # "after" = the current full system, run under T9.1's before/after harness
+    # over the same T7 dataset — has every metric latest.json has, plus
+    # citation_coverage and a real permission-leakage check latest.json lacks.
+    after = load("before_after_after.json")
+    adversarial = load("adversarial.json")
+    prompt_injection = load("prompt_injection.json")
+    latency = load("latency_breakdown_ollama_steady_state.json")
+    load_test = load("load-latest.json")
+
+    metrics = (after or {}).get("metrics", {})
+    leak_detail = (after or {}).get("permission_leakage_detail")
+
+    cache_hit_rate = None
+    if load_test:
+        warm_rates = [
+            p["cache_hit_rate"]
+            for p in load_test.get("phases", [])
+            if p.get("name", "").endswith("_warm") and p.get("cache_hit_rate") is not None
+        ]
+        if warm_rates:
+            cache_hit_rate = round(sum(warm_rates) / len(warm_rates), 3)
+
+    total_stage = (latency or {}).get("total", {})
+
+    return EvalHeadline(
+        total_questions=(after or {}).get("dataset_size"),
+        answer_accuracy=metrics.get("answer_accuracy"),
+        retrieval_hit_rate=metrics.get("retrieval_hit_rate"),
+        citation_accuracy=metrics.get("citation_grounding"),
+        citation_coverage=metrics.get("citation_coverage"),
+        conflict_detection_accuracy=metrics.get("conflict_detection_accuracy"),
+        refusal_accuracy=metrics.get("refusal_accuracy"),
+        permission_leakage=metrics.get("permission_leakage")
+        if metrics.get("permission_leakage") is not None
+        else (0 if leak_detail and leak_detail.get("pass") else None),
+        avg_latency_ms=total_stage.get("mean_ms"),
+        p95_latency_ms=total_stage.get("p95_ms"),
+        cache_hit_rate=cache_hit_rate,
+        adversarial_passed=(adversarial or {}).get("passed"),
+        adversarial_total=(adversarial or {}).get("total"),
+        prompt_injection_passed=(prompt_injection or {}).get("passed"),
+        prompt_injection_total=(prompt_injection or {}).get("total"),
+        source_files=found,
+        missing_files=missing,
+    )
+
+
 @router.get("/evals")
 def evals(
     principal: Principal = Depends(require_role(ROLE_ADMIN)),
 ) -> dict[str, Any]:
-    """Return the most recent eval run, or a not-available marker.
+    """Return the most recent eval run plus the T9.8 headline metrics picture,
+    or a not-available marker.
 
-    Eval results are a repo/CI artifact written by ``eval/run_eval.py``; this
-    endpoint surfaces whatever the runner last produced.
+    Eval results are a repo/CI artifact written by the eval/ scripts; this
+    endpoint surfaces whatever they last produced. ``headline`` is assembled
+    fresh from every eval/results/*.json file found on disk (see
+    ``_build_headline``) — it is never hand-typed, so re-running any T9.1-T9.5
+    script and refreshing this page always reflects the latest real numbers.
     """
+    results_dir = _eval_results_dir()
     path = Path(settings.eval_results_path)
     if not path.exists():
-        return {"available": False}
+        headline = _build_headline(results_dir)
+        return {"available": False, "headline": headline.model_dump()}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -130,6 +219,7 @@ def evals(
             f"Eval results exist but could not be read: {exc}",
         )
     data["available"] = True
+    data["headline"] = _build_headline(results_dir).model_dump()
     return data
 
 
@@ -207,3 +297,85 @@ def query_volume(
     ).all()
     points = [QueryVolumePoint(date=str(d), count=int(c)) for d, c in rows]
     return QueryVolumeResponse(points=points)
+
+
+@router.get("/audit-log", response_model=AuditLogResponse)
+def audit_log(
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_role(ROLE_ADMIN)),
+) -> AuditLogResponse:
+    """Tenant-scoped admin/editor action history — the read side of the
+    ``app.audit.record()`` write path already wired into uploads, ACL changes,
+    and workspace membership. Newest first."""
+    limit = max(1, min(200, limit))
+    offset = max(0, offset)
+    tenant = principal.workspace_id
+
+    total = db.scalar(
+        select(func.count()).select_from(AuditLog).where(AuditLog.workspace_id == tenant)
+    )
+    rows = db.scalars(
+        select(AuditLog)
+        .where(AuditLog.workspace_id == tenant)
+        .order_by(AuditLog.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+    return AuditLogResponse(
+        entries=[AuditLogEntryOut.model_validate(r) for r in rows],
+        total=total or 0,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/feedback", response_model=FeedbackSummaryResponse)
+def feedback_summary(
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_role(ROLE_ADMIN)),
+) -> FeedbackSummaryResponse:
+    """Every rated answer in the workspace — the read side of the feedback
+    loop. Each assistant message's preceding user question (if any) is included
+    for context, since a bare answer with no question is hard to judge."""
+    tenant = principal.workspace_id
+
+    rows = db.execute(
+        select(MessageFeedback, Message, Conversation, User)
+        .join(Message, MessageFeedback.message_id == Message.id)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .join(User, MessageFeedback.user_id == User.id)
+        .where(MessageFeedback.workspace_id == tenant)
+        .order_by(MessageFeedback.created_at.desc())
+    ).all()
+
+    entries: list[FeedbackSummary] = []
+    up_count = down_count = 0
+    for fb, msg, convo, user in rows:
+        if fb.rating == "up":
+            up_count += 1
+        else:
+            down_count += 1
+        prior_question = db.scalar(
+            select(Message.content)
+            .where(
+                Message.conversation_id == convo.id,
+                Message.role == "user",
+                Message.created_at <= msg.created_at,
+            )
+            .order_by(Message.created_at.desc())
+            .limit(1)
+        )
+        entries.append(
+            FeedbackSummary(
+                message_id=msg.id,
+                conversation_id=convo.id,
+                question=prior_question,
+                answer=msg.content,
+                rating=fb.rating,
+                user_email=user.email,
+                created_at=fb.created_at,
+            )
+        )
+    return FeedbackSummaryResponse(entries=entries, up_count=up_count, down_count=down_count)

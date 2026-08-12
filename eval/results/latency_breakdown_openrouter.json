@@ -1,0 +1,11 @@
+{
+  "label": "openrouter",
+  "model": "nvidia/nemotron-nano-9b-v2:free",
+  "note": "Client-side per-stage breakdown lost for request 4 (client timed out at 180s while the server was still processing; server-side total for that request was recovered from request.complete logs). Only whole-request totals available for this run, not the fine per-stage split captured for Ollama.",
+  "total_ms_per_request": [
+    74922.37,
+    37117.21,
+    34965.19,
+    191579.23
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "description": "Small labelled Q&A set over eval/corpus for grounded-RAG evaluation.",
+  "description": "Labelled Q&A set over eval/corpus for grounded-RAG evaluation. Includes conflict-detection cases (Trust Layer T4) via the optional 'expect_conflict' field.",
   "questions": [
     {
       "question": "What is the capital of Zubrowka?",
@@ -14,6 +14,12 @@
       "expected_substrings": ["klubeck"]
     },
     {
+      "question": "What kind of railways is Zubrowka known for?",
+      "expected_doc": "zubrowka.md",
+      "answerable": true,
+      "expected_substrings": ["funicular"]
+    },
+    {
       "question": "Who was the concierge of the Grand Budapest Hotel?",
       "expected_doc": "grand-budapest.md",
       "answerable": true,
@@ -24,6 +30,12 @@
       "expected_doc": "grand-budapest.md",
       "answerable": true,
       "expected_substrings": ["Nebelsbad"]
+    },
+    {
+      "question": "How is the Grand Budapest Hotel reached from the village below?",
+      "expected_doc": "grand-budapest.md",
+      "answerable": true,
+      "expected_substrings": ["funicular"]
     },
     {
       "question": "How does AtlasKB combine dense and sparse retrieval?",
@@ -38,13 +50,59 @@
       "expected_substrings": ["pgvector"]
     },
     {
+      "question": "What does AtlasKB's agent check before writing an answer?",
+      "expected_doc": "atlaskb-architecture.md",
+      "answerable": true,
+      "expected_substrings": ["sufficient"]
+    },
+    {
       "question": "How many queries are included in the AtlasKB free tier?",
       "expected_doc": "atlaskb-billing.md",
       "answerable": true,
       "expected_substrings": ["100"]
     },
     {
+      "question": "What technology powers AtlasKB's semantic cache?",
+      "expected_doc": "atlaskb-billing.md",
+      "answerable": true,
+      "expected_substrings": ["Redis"]
+    },
+    {
+      "question": "How many days of PTO does the HR policy allow per year?",
+      "expected_doc": "northwind-pto-hr-policy.md",
+      "answerable": true,
+      "expected_substrings": ["18"],
+      "expect_conflict": false
+    },
+    {
+      "question": "Does the Northwind Engineering Handbook say PTO is unlimited?",
+      "expected_doc": "northwind-pto-eng-handbook.md",
+      "answerable": true,
+      "expected_substrings": ["unlimited"],
+      "expect_conflict": false
+    },
+    {
+      "question": "According to the April 2025 all-hands notes, how many days per month does PTO accrue under the current company-wide policy?",
+      "expected_doc": "northwind-allhands-2025-04.md",
+      "answerable": true,
+      "expected_substrings": ["1.5"],
+      "expect_conflict": false
+    },
+    {
+      "question": "How much PTO do employees get?",
+      "expected_doc": null,
+      "answerable": true,
+      "expected_substrings": [],
+      "expect_conflict": true
+    },
+    {
       "question": "What is the boiling point of water at sea level?",
+      "expected_doc": null,
+      "answerable": false,
+      "expected_substrings": []
+    },
+    {
+      "question": "What is the airspeed velocity of an unladen swallow?",
       "expected_doc": null,
       "answerable": false,
       "expected_substrings": []

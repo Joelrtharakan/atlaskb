@@ -25,6 +25,7 @@ os.environ["DATABASE_URL"] = (
     f"postgresql+psycopg://atlaskb:atlaskb@{_PG_HOST}:{_PG_PORT}/{_TEST_DB_NAME}"
 )
 os.environ["EMBEDDING_BACKEND"] = "fake"
+os.environ["RERANK_BACKEND"] = "fake"
 os.environ["OPENROUTER_API_KEY"] = "test-key-not-used"
 os.environ["JWT_SECRET"] = "test-jwt-secret-not-a-real-credential"
 os.environ["REDIS_URL"] = os.getenv("TEST_REDIS_URL", f"redis://{_PG_HOST}:6380/15")
@@ -39,9 +40,14 @@ from sqlalchemy import text
 
 _TABLES = (
     "audit_logs",
+    "conflicts",
+    "connector_documents",
+    "connector_configs",
+    "message_feedback",
     "messages",
     "conversations",
     "chunks",
+    "document_versions",
     "document_access_grants",
     "documents",
     "api_keys",

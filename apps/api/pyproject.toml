@@ -31,6 +31,12 @@ dependencies = [
     # Enqueue ingestion jobs onto the Celery broker
     "celery>=5.4",
     "redis>=5.2",
+    # Google Drive connector: OAuth + Drive API client
+    "google-api-python-client>=2.150",
+    "google-auth>=2.35",
+    "google-auth-oauthlib>=1.2",
+    # Encrypts connector refresh tokens at rest (ConnectorConfig.credentials_ref)
+    "cryptography>=43.0",
 ]
 
 [dependency-groups]

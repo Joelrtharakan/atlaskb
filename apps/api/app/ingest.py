@@ -7,11 +7,13 @@ imports so it can be run and tested standalone.
 
 from __future__ import annotations
 
+from sqlalchemy import select
+
 from app.chunking import chunk_blocks, parse_document
 from app.db import SessionLocal
 from app.embeddings import embed_texts
 from app.logging_config import get_logger
-from app.models import Chunk, Document
+from app.models import Chunk, Document, DocumentVersion
 
 log = get_logger(__name__)
 
@@ -20,12 +22,29 @@ _EMBED_BATCH = 64
 
 
 def ingest_document(document_id: str) -> None:
-    """Process one document end to end, updating its status to ready/failed."""
+    """Process one document end to end, updating its status to ready/failed.
+
+    Operates on the document's latest ``DocumentVersion`` row (created
+    synchronously by the upload/reupload endpoint before enqueueing this task —
+    it's always the highest ``version_number`` for the document, pending or
+    already-current). Chunks are written tagged with that version; the version
+    is only promoted to current once its chunks finish writing successfully, so
+    a failed re-ingest never leaves the document without a working version.
+    """
     db = SessionLocal()
     try:
         doc = db.get(Document, document_id)
         if doc is None:
             log.warning("ingest.missing_document", document_id=document_id)
+            return
+
+        version = db.scalar(
+            select(DocumentVersion)
+            .where(DocumentVersion.document_id == doc.id)
+            .order_by(DocumentVersion.version_number.desc())
+        )
+        if version is None:
+            log.warning("ingest.missing_version", document_id=document_id)
             return
 
         try:
@@ -34,6 +53,7 @@ def ingest_document(document_id: str) -> None:
             log.info(
                 "ingest.parsed",
                 document_id=document_id,
+                version_number=version.version_number,
                 blocks=len(blocks),
                 chunks=len(chunks),
             )
@@ -46,13 +66,14 @@ def ingest_document(document_id: str) -> None:
             for i in range(0, len(texts), _EMBED_BATCH):
                 embeddings.extend(embed_texts(texts[i : i + _EMBED_BATCH]))
 
-            # Replace any prior chunks (idempotent re-ingest).
-            db.query(Chunk).filter(Chunk.document_id == doc.id).delete()
+            # Replace this version's own chunks (idempotent retry of the same version).
+            db.query(Chunk).filter(Chunk.version_id == version.id).delete()
             for c, vec in zip(chunks, embeddings, strict=True):
                 db.add(
                     Chunk(
                         document_id=doc.id,
                         workspace_id=doc.workspace_id,
+                        version_id=version.id,
                         chunk_index=c.chunk_index,
                         text=c.text,
                         page_num=c.page_num,
@@ -60,6 +81,14 @@ def ingest_document(document_id: str) -> None:
                         embedding=vec,
                     )
                 )
+
+            # Promote this version to current; demote whichever one held it before.
+            db.query(DocumentVersion).filter(
+                DocumentVersion.document_id == doc.id,
+                DocumentVersion.id != version.id,
+                DocumentVersion.is_current_version.is_(True),
+            ).update({"is_current_version": False})
+            version.is_current_version = True
 
             doc.status = "ready"
             doc.error = None

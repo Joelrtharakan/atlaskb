@@ -35,6 +35,23 @@ class ChunkData:
 # ---------------------------------------------------------------------------
 # Parsing
 # ---------------------------------------------------------------------------
+_BLANK_LINE_RE = re.compile(r"\n\s*\n+")
+
+
+def _split_paragraphs(text: str) -> list[str]:
+    """Split a page's extracted text into paragraphs on blank lines.
+
+    PDF text-extraction quality varies: some PDFs preserve blank lines between
+    paragraphs, others collapse a page to one run of lines with no blank-line
+    boundaries at all. When no boundary exists, the page stays one paragraph —
+    ``chunk_blocks``' word-window packing still applies to it exactly as before,
+    so this is additive: it only stops splitting *across* paragraph boundaries
+    when the source actually has them, instead of always word-wrapping blind.
+    """
+    paras = [p.strip() for p in _BLANK_LINE_RE.split(text) if p.strip()]
+    return paras or ([text] if text.strip() else [])
+
+
 def parse_pdf(path: str | Path) -> list[ParsedBlock]:
     from pypdf import PdfReader
 
@@ -42,8 +59,8 @@ def parse_pdf(path: str | Path) -> list[ParsedBlock]:
     blocks: list[ParsedBlock] = []
     for i, page in enumerate(reader.pages, start=1):
         text = (page.extract_text() or "").strip()
-        if text:
-            blocks.append(ParsedBlock(text=text, page_num=i))
+        for para in _split_paragraphs(text):
+            blocks.append(ParsedBlock(text=para, page_num=i))
     return blocks
 
 

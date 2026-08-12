@@ -13,6 +13,8 @@ const INK = "#16232B";
 const GRAPHITE = "#515C63";
 const BEACON = "#E8A22B";
 const MERIDIAN = "#22B2A6";
+const BRASS = "#C08A45";
+const SIGNAL_RED = "#C1462F";
 
 export interface Atlas2DProps {
   nodes: AtlasNode[];
@@ -22,6 +24,14 @@ export interface Atlas2DProps {
   highlightedId: string | null;
   focus: boolean;
   reducedMotion: boolean;
+  /** Document ids whose evidence is aging (staleness > 0.5) — tints the node
+   * brass instead of the default teal, same threshold as the Dashboard relief
+   * map and "Why this answer?" panel. */
+  staleIds?: string[];
+  /** Document id pairs currently flagged as factually conflicting for this
+   * answer — drawn as a red link between the two nodes, with red rings on
+   * both, so a disagreement is visible on the map itself, not just in text. */
+  conflictPairs?: [string, string][];
 }
 
 export function Atlas2DFallback({
@@ -32,6 +42,8 @@ export function Atlas2DFallback({
   highlightedId,
   focus,
   reducedMotion,
+  staleIds = [],
+  conflictPairs = [],
 }: Atlas2DProps) {
   const { view, project, center } = useMemo(() => {
     const xs = nodes.map((n) => n.position[0]);
@@ -54,6 +66,11 @@ export function Atlas2DFallback({
 
   const activeSet = useMemo(() => new Set(activeIds), [activeIds]);
   const citedSet = useMemo(() => new Set(citedIds), [citedIds]);
+  const staleSet = useMemo(() => new Set(staleIds), [staleIds]);
+  const conflictSet = useMemo(
+    () => new Set(conflictPairs.flat()),
+    [conflictPairs],
+  );
   const showThreads = focus && activeIds.length > 0;
 
   return (
@@ -99,15 +116,68 @@ export function Atlas2DFallback({
           <circle cx={center[0]} cy={center[1]} r={0.28} fill={BEACON} opacity={0.95} />
         )}
 
+        {/* Conflict links — two sources disagreeing, drawn directly between them. */}
+        {conflictPairs.map(([aId, bId], i) => {
+          const a = nodes.find((n) => n.id === aId);
+          const b = nodes.find((n) => n.id === bId);
+          if (!a || !b) return null;
+          const [ax, ay] = project(a.position[0], a.position[1]);
+          const [bx, by] = project(b.position[0], b.position[1]);
+          return (
+            <line
+              key={`conflict-${i}`}
+              x1={ax}
+              y1={ay}
+              x2={bx}
+              y2={by}
+              stroke={SIGNAL_RED}
+              strokeWidth={0.08}
+              strokeDasharray="0.12 0.12"
+              opacity={0.9}
+            />
+          );
+        })}
+
         {/* Document nodes. */}
         {nodes.map((n) => {
           const [x, y] = project(n.position[0], n.position[1]);
           const isActive = activeSet.has(n.id);
           const isCited = citedSet.has(n.id);
           const isHi = highlightedId === n.id;
+          const isStale = staleSet.has(n.id);
+          const isConflict = conflictSet.has(n.id);
           const r = (isHi ? 0.42 : isActive ? 0.3 : 0.2) * (0.8 + n.scale);
+          const fill = isCited || isHi ? BEACON : isActive ? BEACON : isStale ? BRASS : MERIDIAN;
           return (
             <g key={n.id}>
+              {isConflict && (
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={r + 0.24}
+                  fill="none"
+                  stroke={SIGNAL_RED}
+                  strokeWidth={0.07}
+                  opacity={0.9}
+                  className={reducedMotion ? undefined : "atlas2d-pulse"}
+                />
+              )}
+              {isStale && (
+                // Independent of fill color — staleness must stay visible even
+                // when the node is also lit gold (active/cited), which the
+                // fill color alone can't show since active/cited always wins
+                // there. Smaller radius than the conflict ring so both can
+                // show at once, nested.
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={r + 0.12}
+                  fill="none"
+                  stroke={BRASS}
+                  strokeWidth={0.06}
+                  opacity={0.85}
+                />
+              )}
               {(isActive || isHi) && (
                 <circle
                   cx={x}
@@ -120,7 +190,7 @@ export function Atlas2DFallback({
                   className={reducedMotion || !isActive ? undefined : "atlas2d-pulse"}
                 />
               )}
-              <circle cx={x} cy={y} r={r} fill={isCited || isHi ? BEACON : isActive ? BEACON : MERIDIAN} opacity={isActive || isHi ? 0.95 : 0.55} />
+              <circle cx={x} cy={y} r={r} fill={fill} opacity={isActive || isHi ? 0.95 : 0.55} />
               <circle cx={x} cy={y} r={r * 0.45} fill={INK} opacity={0.9} />
             </g>
           );

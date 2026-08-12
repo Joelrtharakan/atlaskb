@@ -24,7 +24,7 @@ async function signupUploadReady(page: Page): Promise<void> {
 
   await page.setInputFiles('input[type="file"]', FIXTURE);
   await page.getByRole("button", { name: /^upload$/i }).click();
-  const row = page.getByRole("row", { name: /zubrowka\.md/i });
+  const row = page.getByRole("listitem").filter({ hasText: /zubrowka\.md/i });
   await expect(row).toBeVisible();
   await expect(row).toContainText("ready", { timeout: 90_000 });
 }

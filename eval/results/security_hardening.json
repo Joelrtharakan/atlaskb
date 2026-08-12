@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-08-12T11:44:45.104006+00:00",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "checks": {
+    "api_key_workspace_confusion": {
+      "pass": true,
+      "status_code": 200,
+      "leaked_b_chunks": false,
+      "retrieved_count": 1
+    },
+    "version_leakage": {
+      "pass": true,
+      "current_question_leaked_old_version": false,
+      "historical_question_leaked_current_version": false,
+      "historical_temporal_intent": "VERSION_SPECIFIC"
+    }
+  }
+}

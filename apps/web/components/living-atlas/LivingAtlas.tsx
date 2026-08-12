@@ -30,6 +30,10 @@ export interface LivingAtlasProps {
   reducedMotion?: boolean;
   /** World-space X offset for the whole field (ambient landing shifts it right). */
   offsetX?: number;
+  /** Document ids whose evidence is aging (staleness > 0.5). Functional mode only. */
+  staleIds?: string[];
+  /** Document id pairs currently flagged as factually conflicting. Functional mode only. */
+  conflictPairs?: [string, string][];
 }
 
 /** Instanced document nodes: solid cores + two soft halo layers (a bloom-like
@@ -266,9 +270,12 @@ function Scene({
   focus,
   reducedMotion,
   offsetX,
-}: Required<Omit<LivingAtlasProps, "nodes" | "edges">> & {
-  data: { nodes: AtlasNode[]; edges: AtlasEdge[] };
-}) {
+  staleIds,
+  conflictPairs,
+}: Required<Omit<LivingAtlasProps, "nodes" | "edges" | "staleIds" | "conflictPairs">> &
+  Pick<LivingAtlasProps, "staleIds" | "conflictPairs"> & {
+    data: { nodes: AtlasNode[]; edges: AtlasEdge[] };
+  }) {
   const group = useRef<THREE.Group>(null);
 
   // A composed static pose so the frozen (reduced-motion) frame reads well.
@@ -294,6 +301,8 @@ function Scene({
         highlightedId={highlightedId}
         focus={focus}
         reducedMotion={reducedMotion}
+        staleIds={staleIds}
+        conflictPairs={conflictPairs}
       />
     );
   }
@@ -336,6 +345,8 @@ export default function LivingAtlas({
   focus = false,
   reducedMotion = false,
   offsetX = 0,
+  staleIds = [],
+  conflictPairs = [],
 }: LivingAtlasProps) {
   const data = useMemo(() => {
     if (nodes && edges) return { nodes, edges };
@@ -359,6 +370,8 @@ export default function LivingAtlas({
         focus={focus}
         reducedMotion={reducedMotion}
         offsetX={offsetX}
+        staleIds={staleIds}
+        conflictPairs={conflictPairs}
       />
     </Canvas>
   );

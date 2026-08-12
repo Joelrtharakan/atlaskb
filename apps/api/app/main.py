@@ -18,10 +18,12 @@ from app.routers import (
     apikeys,
     auth,
     chat,
+    connectors,
     conversations,
     dashboard,
     documents,
     invites,
+    oidc,
     search,
     workspaces,
 )
@@ -162,3 +164,5 @@ app.include_router(dashboard.router)
 app.include_router(conversations.router)
 app.include_router(search.router)
 app.include_router(chat.router)
+app.include_router(connectors.router)
+app.include_router(oidc.router)

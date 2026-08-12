@@ -26,12 +26,14 @@ const { nodes: DEMO_NODES, edges: DEMO_EDGES } = layoutFromDocuments(DEMO_DOCS);
 const DEMO_CHUNK: ScoredChunk = {
   chunk_id: "demo-chunk-1",
   document_id: "demo-1",
+  version_id: "demo-1-v1",
   text: "Customer data is retained for 90 days after account closure, after which it is permanently purged from primary and backup storage.",
   page_num: 4,
   section: null,
   score: 0.91,
   dense_score: 0.88,
   sparse_score: 0.74,
+  rerank_score: 0.93,
 };
 const DEMO_QUESTION = "What's our data retention policy after a customer closes their account?";
 
