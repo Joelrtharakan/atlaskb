@@ -41,6 +41,11 @@ class LLMHealthResponse(BaseModel):
     model: str
     reachable: bool
     model_available: bool
+    # Trust Layer T11.1: makes the generation concurrency limiter an
+    # observable number instead of a silent bottleneck — active_generations
+    # is a live, cross-replica count (Redis-backed), not per-process.
+    active_generations: int
+    concurrency_limit: int
 
 
 def _require_runtime_secrets() -> None:
@@ -150,8 +155,13 @@ async def health_llm() -> LLMHealthResponse:
     """LLM/Ollama availability. Reported separately from ``/health`` so a down LLM
     never marks the whole API unhealthy — the app still serves auth, docs, search."""
     from app.llm import ollama_health
+    from app.llm_concurrency import active_generations
 
-    return LLMHealthResponse(**ollama_health())
+    return LLMHealthResponse(
+        **ollama_health(),
+        active_generations=active_generations(),
+        concurrency_limit=settings.llm_concurrency_limit,
+    )
 
 
 app.include_router(auth.router)

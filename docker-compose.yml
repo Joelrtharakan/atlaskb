@@ -19,6 +19,32 @@ services:
       timeout: 5s
       retries: 10
 
+  # Trust Layer T11.2, opt-in (`docker compose --profile pgbouncer up`):
+  # session-pooled Postgres access for horizontal scaling. Each API replica's
+  # own SQLAlchemy pool (db_pool_size + db_max_overflow, see app/config.py)
+  # bounds *that replica's* connections, but N replicas each opening that
+  # many connections directly against Postgres still multiplies against its
+  # own max_connections (100 by default) — PgBouncer centralizes pooling so
+  # the replica count can grow without also growing Postgres's real
+  # connection load. Point DATABASE_URL at postgres:6432 (not postgres:5432)
+  # to use it: postgresql+psycopg://<user>:<pass>@pgbouncer:6432/<db>.
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.24.1-p2
+    profiles: ["pgbouncer"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-atlaskb}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-atlaskb}
+      POOL_MODE: session
+      # SQLAlchemy issues prepared statements; PgBouncer's session mode
+      # supports them, but transaction/statement mode would silently break
+      # them -- session mode is the only one compatible with this app as-is.
+      MAX_CLIENT_CONN: 500
+      DEFAULT_POOL_SIZE: 20
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   redis:
     image: redis:7-alpine
     ports:

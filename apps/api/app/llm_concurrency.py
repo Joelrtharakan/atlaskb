@@ -52,8 +52,8 @@ def _try_acquire() -> bool:
     if count > settings.llm_concurrency_limit:
         try:
             redis.decr(_active_key())
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:  # noqa: BLE001
+            log.debug("llm_concurrency.decr_failed", error=str(exc))
         return False
     return True
 
@@ -61,8 +61,8 @@ def _try_acquire() -> bool:
 def _release() -> None:
     try:
         get_redis().decr(_active_key())
-    except Exception:  # noqa: BLE001 - best-effort; must never raise from a `finally`
-        pass
+    except Exception as exc:  # noqa: BLE001 - best-effort; must never raise from a `finally`
+        log.debug("llm_concurrency.release_failed", error=str(exc))
 
 
 def active_generations() -> int:

@@ -1,0 +1,2333 @@
+{
+  "phase": "regression_p0fix",
+  "generated_at": "2026-08-12T16:01:45.550498+00:00",
+  "config": {
+    "workspace_id": "f3d30555-e289-450f-8e49-cba368b975fe",
+    "top_k": 8
+  },
+  "records": [
+    {
+      "section": "search",
+      "id": "s_basic_pto",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "PTO carryover",
+      "expected_behavior": "handbook (carryover up to 5) and/or all-hands (5->10) ranked top 1-3 with a clear score gap",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'handbook', 'allhands'] want-any=['handbook', 'allhands'] | top score 3.5803 vs #2 1.1864",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 3.58034,
+            "dense": 0.3824,
+            "sparse": 0.0045,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 1.18639,
+            "dense": 0.2291,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -5.87585,
+            "dense": 0.1934,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": -5.94958,
+            "dense": 0.1964,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -10.45748,
+            "dense": 0.099,
+            "sparse": 0,
+            "text": "15. System Architecture +-----------------------------------------------------------+ | Frontend (Next.js/React) | | Parent \u2022 Teacher \u2022 Clinician \u2022 Admin Dashboards | +------------"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": -10.92577,
+            "dense": 0.1166,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -10.99853,
+            "dense": 0.1301,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -11.08009,
+            "dense": 0.1131,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_basic_servo",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "servo motor shortage",
+      "expected_behavior": "falcon (open risk) and/or all-hands (resolved) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'falcon', 'falcon'] want-any=['falcon', 'allhands'] | top score 1.9841 vs #2 1.2442",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 1.98414,
+            "dense": 0.4747,
+            "sparse": 0.1,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 1.24417,
+            "dense": 0.3607,
+            "sparse": 0.0167,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -11.21503,
+            "dense": 0.269,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -11.26508,
+            "dense": 0.1413,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -11.28276,
+            "dense": 0.1825,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -11.28993,
+            "dense": 0.2398,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": -11.29821,
+            "dense": 0.1455,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": -11.36255,
+            "dense": 0.2101,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_basic_oncall",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "on-call rotation",
+      "expected_behavior": "onboarding (on-call section) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['onboarding', 'onboarding', 'allhands'] want-any=['onboarding', 'allhands'] | top score 4.9267 vs #2 2.6554",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 4.92671,
+            "dense": 0.4657,
+            "sparse": 0.0067,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 2.65543,
+            "dense": 0.1571,
+            "sparse": 0.1175,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": -4.90629,
+            "dense": 0.2637,
+            "sparse": 0,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -7.05908,
+            "dense": 0.1185,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -8.04958,
+            "dense": 0.1119,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -11.32385,
+            "dense": 0.1299,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": -11.37105,
+            "dense": 0.1331,
+            "sparse": 0,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -11.40831,
+            "dense": 0.0726,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_basic_expense",
+      "group": "Basic relevance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "expense reimbursement approval",
+      "expected_behavior": "handbook (expense table) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['handbook', 'restricted', 'restricted'] want-any=['handbook'] | top score 1.4769 vs #2 -9.6579",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": 1.47692,
+            "dense": 0.3394,
+            "sparse": 0.0548,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "restricted",
+            "page": 2,
+            "score": -9.65789,
+            "dense": 0.1598,
+            "sparse": 0,
+            "text": "3. Severance Terms VP-level and above are entitled to 6 months of base salary and 12 months of accelerated equity vesting in the event of termination without cause, contingent on s"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": -10.8342,
+            "dense": 0.2719,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 25,
+            "score": -11.16403,
+            "dense": 0.1551,
+            "sparse": 0,
+            "text": "24. Social Impact The proposed system contributes significantly to healthcare accessibility and early childhood development. Expected benefits include: \u2022 Supporting early autism sc"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -11.17913,
+            "dense": 0.1034,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 2,
+            "score": -11.18531,
+            "dense": 0.1235,
+            "sparse": 0,
+            "text": "categories, confidence scores, clinician-friendly reports, and referral recommendations to support healthcare professionals, parents, and educators in making informed decisions. Ra"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": -11.20331,
+            "dense": 0.1131,
+            "sparse": 0,
+            "text": "1. High-level service architecture: cloud platform and robot fleet. 3. Coding Standards Standard Requirement Test coverage Above 80% before merge Code review 1+ approval from a sen"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -11.20828,
+            "dense": 0.1411,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_iso",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "ISO/TS 15066",
+      "expected_behavior": "precise BM25 match in falcon/all-hands top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['falcon', 'allhands', 'ASD Final Year Project Proposal.pdf'] want-any=['falcon', 'allhands'] | top score 4.2074 vs #2 3.4581",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 4.20739,
+            "dense": 0,
+            "sparse": 0.1,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 3.45813,
+            "dense": 0.2567,
+            "sparse": 0.1,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -9.96604,
+            "dense": 0.1313,
+            "sparse": 0,
+            "text": "15. System Architecture +-----------------------------------------------------------+ | Frontend (Next.js/React) | | Parent \u2022 Teacher \u2022 Clinician \u2022 Admin Dashboards | +------------"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -10.74858,
+            "dense": 0.1928,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -10.93548,
+            "dense": 0.1251,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": -11.02241,
+            "dense": 0.1981,
+            "sparse": 0,
+            "text": "1. High-level service architecture: cloud platform and robot fleet. 3. Coding Standards Standard Requirement Test coverage Above 80% before merge Code review 1+ approval from a sen"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -11.10101,
+            "dense": 0.1422,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": -11.10781,
+            "dense": 0.1457,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_cost",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "$8,600",
+      "expected_behavior": "all-hands (actual unit cost) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'allhands', 'falcon'] want-any=['allhands'] | top score 1.0073 vs #2 -3.1951",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 1.00727,
+            "dense": 0.1653,
+            "sparse": 0.1333,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -3.19506,
+            "dense": 0.1114,
+            "sparse": 0.1333,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -7.21484,
+            "dense": 0.1311,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": -9.36235,
+            "dense": 0.1684,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -10.25448,
+            "dense": 0.1048,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -10.83062,
+            "dense": 0.0836,
+            "sparse": 0,
+            "text": "15. System Architecture +-----------------------------------------------------------+ | Frontend (Next.js/React) | | Parent \u2022 Teacher \u2022 Clinician \u2022 Admin Dashboards | +------------"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 5,
+            "score": -10.8315,
+            "dense": 0.0508,
+            "sparse": 0,
+            "text": "Decision Support System Using Explainable AI and Automated Machine Learning that assists healthcare professionals in the early screening of Autism Spectrum Disorder through explain"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 20,
+            "score": -10.89375,
+            "dense": 0.044,
+            "sparse": 0,
+            "text": "research-oriented while keeping it realistic for a B.Tech final-year project. 18. Evaluation Methodology To validate the effectiveness of the proposed Intelligent Autism Screening "
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_12kg",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "12 kg",
+      "expected_behavior": "falcon (v3 payload) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['falcon', 'ASD Final Year Project Proposal.pdf', 'ASD Final Year Project Proposal.pdf'] want-any=['falcon'] | top score 0.5512 vs #2 -10.2049",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.55119,
+            "dense": 0.0687,
+            "sparse": 0.2,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -10.20492,
+            "dense": 0.0694,
+            "sparse": 0,
+            "text": "15. System Architecture +-----------------------------------------------------------+ | Frontend (Next.js/React) | | Parent \u2022 Teacher \u2022 Clinician \u2022 Admin Dashboards | +------------"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 13,
+            "score": -10.37113,
+            "dense": 0.0354,
+            "sparse": 0,
+            "text": "12.2 Proposed Workflow The overall workflow of the proposed system is illustrated below. Parent / Teacher / Healthcare Professional \u2502 \u25bc User Authentication \u2502 \u25bc Child Profile Regist"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -11.00294,
+            "dense": 0.0972,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 3,
+            "score": -11.0036,
+            "dense": 0.044,
+            "sparse": 0,
+            "text": "and autism specialists. Standard diagnostic procedures involve multiple clinical observations, behavioral assessments, interviews with parents, and standardized screening questionn"
+          },
+          {
+            "src": "restricted",
+            "page": 2,
+            "score": -11.10107,
+            "dense": 0.0259,
+            "sparse": 0,
+            "text": "3. Severance Terms VP-level and above are entitled to 6 months of base salary and 12 months of accelerated equity vesting in the event of termination without cause, contingent on s"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 27,
+            "score": -11.1113,
+            "dense": 0.0377,
+            "sparse": 0,
+            "text": "28. References Use IEEE citation style. Start with references such as: 1. Ehsan, K., Sultan, K., Fatima, A., Sheraz, M., & Chuah, T. C., \"Early Detection of Autism Spectrum Disorde"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 7,
+            "score": -11.1186,
+            "dense": 0.0533,
+            "sparse": 0,
+            "text": "Diagnostics, 15(15), 1859. Summary The base paper investigates the application of Automated Machine Learning (AutoML) for the early screening of Autism Spectrum Disorder. Rather th"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_tok_nwcli",
+      "group": "Exact-token",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "northwind/tap/nw-cli",
+      "expected_behavior": "onboarding (dev env setup) top 1-3",
+      "verdict": "pass",
+      "reason": "top3 sources=['onboarding', 'security', 'onboarding'] want-any=['onboarding'] | top score 7.0836 vs #2 -2.1448",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": 7.08363,
+            "dense": 0.4857,
+            "sparse": 0.1,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -2.14481,
+            "dense": 0.3361,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": -2.72318,
+            "dense": 0.2501,
+            "sparse": 0,
+            "text": "1. High-level service architecture: cloud platform and robot fleet. 3. Coding Standards Standard Requirement Test coverage Above 80% before merge Code review 1+ approval from a sen"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -2.82639,
+            "dense": 0.218,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          },
+          {
+            "src": "security",
+            "page": 3,
+            "score": -3.06906,
+            "dense": 0.4394,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Security & Data Policy \u2014 Last updated February 2024 Page 3"
+          },
+          {
+            "src": "restricted",
+            "page": 3,
+            "score": -3.12976,
+            "dense": 0.2459,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3 NORTHWIND ROBOTICS RESTRICTED Executive Compensation & Equity Plan \u2014 RESTRICTED Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 3,
+            "score": -3.29108,
+            "dense": 0.4429,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Employee Handbook \u2014 Last updated March 2024 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 3,
+            "score": -3.31554,
+            "dense": 0.4615,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Engineering Onboarding Guide \u2014 Last updated January 2024 Pag"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_sem_timeoff",
+      "group": "Semantic/synonym",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "time off balance",
+      "expected_behavior": "should still find PTO content (handbook/all-hands) top 1-3 via dense",
+      "verdict": "pass",
+      "reason": "top3 sources=['handbook', 'falcon', 'security'] want-any=['handbook', 'allhands'] | top score -1.3970 vs #2 -9.6802",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -1.39703,
+            "dense": 0.2502,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": -9.6802,
+            "dense": 0.1799,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -9.96544,
+            "dense": 0.0855,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -10.0493,
+            "dense": 0.1104,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -10.39039,
+            "dense": 0.2116,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "restricted",
+            "page": 2,
+            "score": -10.52226,
+            "dense": 0.1038,
+            "sparse": 0,
+            "text": "3. Severance Terms VP-level and above are entitled to 6 months of base salary and 12 months of accelerated equity vesting in the event of termination without cause, contingent on s"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -10.60055,
+            "dense": 0.1937,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": -11.05989,
+            "dense": 0.245,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_sem_stops",
+      "group": "Semantic/synonym",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "robot arm stops itself",
+      "expected_behavior": "falcon force-limiting collision detection top 1-3 via dense",
+      "verdict": "pass",
+      "reason": "top3 sources=['falcon', 'falcon', 'onboarding'] want-any=['falcon'] | top score 0.2430 vs #2 -4.1162",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 0.24299,
+            "dense": 0.2418,
+            "sparse": 0.0013,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -4.11622,
+            "dense": 0.1654,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": -6.76414,
+            "dense": 0.1345,
+            "sparse": 0,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": -7.21411,
+            "dense": 0.26,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -8.90615,
+            "dense": 0.1442,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -9.75663,
+            "dense": 0.1846,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "allhands",
+            "page": 3,
+            "score": -10.01297,
+            "dense": 0.27,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3 NORTHWIND ROBOTICS INTERNAL Q3 2024 All-Hands Notes \u2014 Posted September 18, 2024 Page 3"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -10.15054,
+            "dense": 0.1718,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_sem_confidential",
+      "group": "Semantic/synonym",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "who can see confidential company data",
+      "expected_behavior": "security data classification section top 1-3 via dense",
+      "verdict": "pass",
+      "reason": "top3 sources=['security', 'security', 'restricted'] want-any=['security'] | top score -10.3044 vs #2 -10.6566",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "security",
+            "page": 2,
+            "score": -10.30443,
+            "dense": 0.3102,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -10.65661,
+            "dense": 0.4071,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": -11.06613,
+            "dense": 0.2321,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 20,
+            "score": -11.10524,
+            "dense": 0.1981,
+            "sparse": 0,
+            "text": "Component Technology Deployment Docker, Render/AWS 17. Security and Privacy Since the system processes children's behavioral information and facial images, strong security controls"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -11.15313,
+            "dense": 0.222,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 3,
+            "score": -11.16392,
+            "dense": 0.1245,
+            "sparse": 0,
+            "text": "indicating prediction reliability, structured clinical reports, secure deployment, and transparent decision-support mechanisms before integrating AI into routine medical practice. "
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 14,
+            "score": -11.17864,
+            "dense": 0.1803,
+            "sparse": 0,
+            "text": "Professional Screening Report \u2502 \u25bc Secure Web Dashboard Figure 3.1: Overall Workflow of the Proposed System 13. Proposed Methodology The proposed methodology consists of eight seque"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 5,
+            "score": -11.19811,
+            "dense": 0.1394,
+            "sparse": 0,
+            "text": "Decision Support System Using Explainable AI and Automated Machine Learning that assists healthcare professionals in the early screening of Autism Spectrum Disorder through explain"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_typo_servo",
+      "group": "Typo tolerance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "servo moter shortage",
+      "expected_behavior": "still find servo shortage content despite typo",
+      "verdict": "pass",
+      "reason": "top3 sources=['allhands', 'falcon', 'security'] want-any=['falcon', 'allhands'] | top score -2.3996 vs #2 -3.5063",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -2.39956,
+            "dense": 0.4304,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": -3.5063,
+            "dense": 0.3477,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -11.25921,
+            "dense": 0.1615,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -11.29549,
+            "dense": 0.2944,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -11.30407,
+            "dense": 0.2219,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -11.32418,
+            "dense": 0.2336,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -11.35351,
+            "dense": 0.183,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -11.36547,
+            "dense": 0.1634,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_typo_falcon",
+      "group": "Typo tolerance",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "falcon arm saftey features",
+      "expected_behavior": "still find falcon safety content despite typo",
+      "verdict": "pass",
+      "reason": "top3 sources=['falcon', 'falcon', 'falcon'] want-any=['falcon'] | top score 3.3245 vs #2 0.8458",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": 3.32448,
+            "dense": 0.3484,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": 0.84577,
+            "dense": 0.5219,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "falcon",
+            "page": 3,
+            "score": -3.43823,
+            "dense": 0.5583,
+            "sparse": 0,
+            "text": "NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3 NORTHWIND ROBOTICS INTERNAL Falcon Arm v3 PRD \u2014 Last updated November 2023 Page 3"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": -4.07875,
+            "dense": 0.3104,
+            "sparse": 0,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -6.56086,
+            "dense": 0.2552,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -10.02092,
+            "dense": 0.3061,
+            "sparse": 0,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -11.2501,
+            "dense": 0.2034,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -11.29425,
+            "dense": 0.2941,
+            "sparse": 0,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_amb_access",
+      "group": "Ambiguous/multi-doc",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "access",
+      "expected_behavior": "multiple genuinely relevant chunks from different docs (security, onboarding)",
+      "verdict": "pass",
+      "reason": "distinct sources=['onboarding', 'security', 'ASD Final Year Project Proposal.pdf', 'allhands', 'restricted']",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 1.12361,
+            "dense": 0.3106,
+            "sparse": 0.4,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": 0.76584,
+            "dense": 0.4636,
+            "sparse": 0.8,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 20,
+            "score": -3.49969,
+            "dense": 0.1274,
+            "sparse": 0.2,
+            "text": "Component Technology Deployment Docker, Render/AWS 17. Security and Privacy Since the system processes children's behavioral information and facial images, strong security controls"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 25,
+            "score": -4.19925,
+            "dense": 0,
+            "sparse": 0.2,
+            "text": "24. Social Impact The proposed system contributes significantly to healthcare accessibility and early childhood development. Expected benefits include: \u2022 Supporting early autism sc"
+          },
+          {
+            "src": "allhands",
+            "page": 2,
+            "score": -4.62396,
+            "dense": 0.1612,
+            "sparse": 0.1,
+            "text": "guide, for current on-call procedures. Reminder that production access requests now also require a short security interview in addition to the existing training + level-3 requireme"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 11,
+            "score": -4.71277,
+            "dense": 0.2031,
+            "sparse": 0.2,
+            "text": "Generation Automatically generate structured screening reports summarizing: \u2022 Predicted ASD risk level \u2022 Confidence score \u2022 Key behavioral and facial factors influencing the predic"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 25,
+            "score": -5.29739,
+            "dense": 0.1466,
+            "sparse": 0.1,
+            "text": "outcomes for children. SDG 4 \u2013 Quality Education Facilitates earlier educational interventions by helping identify children who may require specialized support. SDG 10 \u2013 Reduced In"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": -5.40535,
+            "dense": 0.1392,
+            "sparse": 0.1,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_amb_gateway",
+      "group": "Ambiguous/multi-doc",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "device-gateway",
+      "expected_behavior": "relevant chunks from onboarding/falcon/all-hands",
+      "verdict": "pass",
+      "reason": "distinct sources=['onboarding', 'allhands', 'falcon', 'ASD Final Year Project Proposal.pdf', 'security']",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": 4.12123,
+            "dense": 0.2687,
+            "sparse": 0.1,
+            "text": "week long, and the rotation covers the device-gateway, control-plane API, and firmware update services. On-call engineers are expected to acknowledge pages within 15 minutes. NORTH"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": 4.03061,
+            "dense": 0.3454,
+            "sparse": 0.1,
+            "text": "Now confirmed for Q4 2024 (was Q3), due to added field-testing time Unit cost $8,600 actual vs. $8,200 target, due to second supplier's pricing Figure 1. PTO policy change and Falc"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -1.47619,
+            "dense": 0.2535,
+            "sparse": 0.1,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "onboarding",
+            "page": 1,
+            "score": -2.40034,
+            "dense": 0.2475,
+            "sparse": 0.1,
+            "text": "Engineering Onboarding Guide Northwind Robotics \u007f Last updated: January 2024 1. Development Environment Setup New engineers should install the nw-cli tool (brew install northwind/t"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -3.33665,
+            "dense": 0.1967,
+            "sparse": 0.1,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -9.00678,
+            "dense": 0.1156,
+            "sparse": 0,
+            "text": "15. System Architecture +-----------------------------------------------------------+ | Frontend (Next.js/React) | | Parent \u2022 Teacher \u2022 Clinician \u2022 Admin Dashboards | +------------"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -10.44178,
+            "dense": 0.1786,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -10.62831,
+            "dense": 0.1645,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_absent_battery",
+      "group": "Deliberately absent",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "battery life",
+      "expected_behavior": "empty or clearly low relevance, not a forced high-confidence match",
+      "verdict": "pass",
+      "reason": "max dense_score=0.1626 (thr 0.55), top src=ASD Final Year Project Proposal.pdf",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -10.31672,
+            "dense": 0.0706,
+            "sparse": 0,
+            "text": "15. System Architecture +-----------------------------------------------------------+ | Frontend (Next.js/React) | | Parent \u2022 Teacher \u2022 Clinician \u2022 Admin Dashboards | +------------"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -11.01243,
+            "dense": 0.081,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": -11.15472,
+            "dense": 0.1498,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -11.21768,
+            "dense": 0.1217,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 5,
+            "score": -11.30544,
+            "dense": 0.0649,
+            "sparse": 0,
+            "text": "levels, confidence scores, contributing factors, and referral recommendations. 7. Develop a secure web-based application for parents, teachers, and healthcare professionals. 8. Eva"
+          },
+          {
+            "src": "security",
+            "page": 2,
+            "score": -11.31732,
+            "dense": 0.1626,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -11.33566,
+            "dense": 0.1504,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 17,
+            "score": -11.35064,
+            "dense": 0.0707,
+            "sparse": 0,
+            "text": "Phase 8 \u2013 Clinical Decision Support The final output includes: \u2022 Predicted class \u2022 Confidence score \u2022 Risk category (Low, Moderate, High) \u2022 Key contributing behavioral factors \u2022 Fa"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_absent_refund",
+      "group": "Deliberately absent",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "customer refund policy",
+      "expected_behavior": "empty or clearly low relevance, not a forced high-confidence match",
+      "verdict": "pass",
+      "reason": "max dense_score=0.1735 (thr 0.55), top src=security",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "security",
+            "page": 2,
+            "score": -9.38701,
+            "dense": 0.1735,
+            "sparse": 0,
+            "text": "Role Public Internal Restricted Admin \u2713 \u2713 \u2713 3. Incident Response Security incidents must be reported immediately to #security-incidents. The on-call security engineer will triage w"
+          },
+          {
+            "src": "restricted",
+            "page": 1,
+            "score": -9.43934,
+            "dense": 0.1714,
+            "sparse": 0,
+            "text": "RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72. Executive Compensation & Equity Plan Northwind Robotics \u007f Last updated: May 202"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -10.31546,
+            "dense": 0.1724,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -10.69018,
+            "dense": 0.1445,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -10.73326,
+            "dense": 0.0973,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 5,
+            "score": -11.04651,
+            "dense": 0.0805,
+            "sparse": 0,
+            "text": "Decision Support System Using Explainable AI and Automated Machine Learning that assists healthcare professionals in the early screening of Autism Spectrum Disorder through explain"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 12,
+            "score": -11.04751,
+            "dense": 0.0758,
+            "sparse": 0,
+            "text": "for practical clinical decision support 12. Proposed System 12.1 System Overview The proposed Intelligent Autism Screening and Clinical Decision Support System Using Explainable AI"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 2,
+            "score": -11.13119,
+            "dense": 0.0805,
+            "sparse": 0,
+            "text": "categories, confidence scores, clinician-friendly reports, and referral recommendations to support healthcare professionals, parents, and educators in making informed decisions. Ra"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_acl_salary",
+      "group": "ACL enforcement in raw search",
+      "layer": "access_control",
+      "role": "viewer",
+      "query": "salary bands",
+      "expected_behavior": "zero results from the restricted document at any score",
+      "verdict": "pass",
+      "reason": "restricted excluded (sources=['ASD Final Year Project Proposal.pdf', 'handbook', 'allhands', 'onboarding', 'security'])",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -10.25068,
+            "dense": 0.0045,
+            "sparse": 0,
+            "text": "15. System Architecture +-----------------------------------------------------------+ | Frontend (Next.js/React) | | Parent \u2022 Teacher \u2022 Clinician \u2022 Admin Dashboards | +------------"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -10.82159,
+            "dense": 0.093,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -11.1905,
+            "dense": 0.0684,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -11.19833,
+            "dense": 0.0064,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": -11.24479,
+            "dense": 0.0594,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -11.30706,
+            "dense": 0.0325,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          },
+          {
+            "src": "onboarding",
+            "page": 2,
+            "score": -11.32116,
+            "dense": 0.1183,
+            "sparse": 0,
+            "text": "4. Access & Security for Engineers Engineers are granted read access to the primary monorepo on day one. Access to production infrastructure (AWS console, production Kubernetes clu"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -11.33551,
+            "dense": 0.0468,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          }
+        ]
+      }
+    },
+    {
+      "section": "search",
+      "id": "s_acl_severance",
+      "group": "ACL enforcement in raw search",
+      "layer": "access_control",
+      "role": "viewer",
+      "query": "severance terms",
+      "expected_behavior": "zero results from the restricted document at any score",
+      "verdict": "pass",
+      "reason": "restricted excluded (sources=['handbook', 'ASD Final Year Project Proposal.pdf', 'falcon', 'allhands', 'security'])",
+      "response": {
+        "status": 200,
+        "cached": false,
+        "results": [
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -10.94348,
+            "dense": 0.1756,
+            "sparse": 0,
+            "text": "Employee Handbook Northwind Robotics \u007f Last updated: March 2024 1. Paid Time Off (PTO) Full-time employees accrue 15 days of paid time off per calendar year, plus 8 company holiday"
+          },
+          {
+            "src": "handbook",
+            "page": 1,
+            "score": -11.23252,
+            "dense": 0.1698,
+            "sparse": 0,
+            "text": "corporate travel portal N/A \u2014 booked directly 4. Parental Leave Northwind Robotics offers 12 weeks of paid parental leave for the primary caregiver and 6 weeks for the secondary ca"
+          },
+          {
+            "src": "handbook",
+            "page": 2,
+            "score": -11.24737,
+            "dense": 0.1988,
+            "sparse": 0,
+            "text": "5. Performance Reviews Cycle Timing Inputs Mid-year June Self-assessment, manager assessment Year-end December Self-assessment, manager assessment, peer feedback (2+ colleagues) Co"
+          },
+          {
+            "src": "ASD Final Year Project Proposal.pdf",
+            "page": 19,
+            "score": -11.26451,
+            "dense": 0.0751,
+            "sparse": 0,
+            "text": "| +---------------------------+-------------------------------+ | \u25bc +-----------------------------------------------------------+ | Cloud Storage (Images/PDFs) | +-----------------"
+          },
+          {
+            "src": "falcon",
+            "page": 1,
+            "score": -11.31965,
+            "dense": 0.0698,
+            "sparse": 0,
+            "text": "Falcon Arm v3 \u2014 Product Requirements Document Northwind Robotics \u007f Last updated: November 2023 1. Overview Falcon Arm v3 is Northwind Robotics' third-generation collaborative robot"
+          },
+          {
+            "src": "falcon",
+            "page": 2,
+            "score": -11.33196,
+            "dense": 0.0799,
+            "sparse": 0,
+            "text": "out gradually (5% \u2192 25% \u2192 100% of fleet) over 72 hours, with automatic rollback if error rates exceed 2%. 4. Safety Features Falcon v3 includes force-limiting collision detection, "
+          },
+          {
+            "src": "allhands",
+            "page": 1,
+            "score": -11.33732,
+            "dense": 0.1936,
+            "sparse": 0,
+            "text": "Q3 2024 All-Hands \u2014 Meeting Notes Northwind Robotics \u007f Posted: September 18, 2024 Attendance: ~85 employees attended in person or via video; recording posted in #eng-general. HR Up"
+          },
+          {
+            "src": "security",
+            "page": 1,
+            "score": -11.36984,
+            "dense": 0.1042,
+            "sparse": 0,
+            "text": "Security & Data Policy Northwind Robotics \u007f Last updated: February 2024 1. Access Control Northwind follows a role-based access model for all internal systems. Access to production"
+          }
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_falcon_v2_reach",
+      "group": "Table-only facts",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "What is Falcon v2's reach?",
+      "expected_behavior": "1.1 m (from the key specs table)",
+      "verdict": "fail",
+      "reason": "expected an answer but got not-answerable | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "Version 2 doesn't exist for this document \u2014 versions 1 through 1 are available.",
+        "citations": [],
+        "queries": [
+          "What is Falcon v2's reach?"
+        ],
+        "iterations": 0,
+        "cached": false,
+        "retrieved_sources": []
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_falcon_v2_power",
+      "group": "Table-only facts",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "What is Falcon v2's power consumption, typical and peak?",
+      "expected_behavior": "380W typical / 750W peak",
+      "verdict": "fail",
+      "reason": "expected an answer but got not-answerable | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "Version 2 doesn't exist for this document \u2014 versions 1 through 1 are available.",
+        "citations": [],
+        "queries": [
+          "What is Falcon v2's power consumption, typical and peak?"
+        ],
+        "iterations": 0,
+        "cached": false,
+        "retrieved_sources": []
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_log_retention",
+      "group": "Table-only facts",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "How long are internal engineering logs retained?",
+      "expected_behavior": "90 days",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=1",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "Internal engineering logs are retained for 90 days.",
+        "citations": [
+          {
+            "claim": "Internal engineering logs are retained for 90 days.",
+            "chunk_ids": [
+              "46bd91ae-1b42-4236-9d24-c2552b1283fa"
+            ]
+          }
+        ],
+        "queries": [
+          "How long are internal engineering logs retained?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "security",
+          "onboarding",
+          "restricted",
+          "handbook",
+          "allhands"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_test_coverage",
+      "group": "Table-only facts",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "What is the required test coverage percentage before merge?",
+      "expected_behavior": "above 80%",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=1",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "The required test coverage percentage before merge is above 80%.",
+        "citations": [
+          {
+            "claim": "Coding Standards Standard Requirement Test coverage Above 80% before merge",
+            "chunk_ids": [
+              "b13c3b85-484a-422d-b850-12b54f004bbd"
+            ]
+          }
+        ],
+        "queries": [
+          "What is the required test coverage percentage before merge?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "onboarding",
+          "falcon",
+          "security",
+          "ASD Final Year Project Proposal.pdf",
+          "restricted"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_day4",
+      "group": "Table-only facts",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "What is Day 4 of the engineering onboarding checklist?",
+      "expected_behavior": "pair with an onboarding buddy on a good-first-issue starter ticket",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=1",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "On Day 4, engineers are expected to pair with an onboarding buddy on a starter ticket labeled 'good-first-issue'.",
+        "citations": [
+          {
+            "claim": "On Day 4, engineers are expected to pair with an onboarding buddy on a starter ticket labeled 'good-first-issue'.",
+            "chunk_ids": [
+              "b352fa9d-dd6e-46fc-b80c-12e2a44df2f5"
+            ]
+          }
+        ],
+        "queries": [
+          "What is Day 4 of the engineering onboarding checklist?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "onboarding",
+          "security",
+          "allhands",
+          "ASD Final Year Project Proposal.pdf"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_iso_timing",
+      "group": "Table-only facts",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "When was the ISO/TS 15066 safety certification completed?",
+      "expected_behavior": "completed in August (ahead of schedule)",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=1",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "The ISO/TS 15066 safety certification was completed in August.",
+        "citations": [
+          {
+            "claim": "The ISO/TS 15066 safety certification was completed in August.",
+            "chunk_ids": [
+              "6c9adbb0-ebdf-4d0c-89c8-7956f91563c9"
+            ]
+          }
+        ],
+        "queries": [
+          "When was the ISO/TS 15066 safety certification completed?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "allhands",
+          "falcon",
+          "handbook",
+          "security",
+          "onboarding"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_board_vp",
+      "group": "Table-only facts",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "What was the Q1 2024 board decision on VP compensation?",
+      "expected_behavior": "approved a 10% increase to the VP salary band (restricted doc; admin can see)",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=1",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "In Q1 2024, the board approved a 10% increase to the VP salary band, effective April 1, 2024.",
+        "citations": [
+          {
+            "claim": "In Q1 2024, the board approved a 10% increase to the VP salary band, effective April 1, 2024.",
+            "chunk_ids": [
+              "6c91bca3-177b-417b-9c8c-351af3e6e119"
+            ]
+          }
+        ],
+        "queries": [
+          "What was the Q1 2024 board decision on VP compensation?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "restricted",
+          "allhands",
+          "handbook",
+          "falcon"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_viewer_restricted",
+      "group": "Table structure integrity",
+      "layer": "chunking",
+      "role": "admin",
+      "query": "According to the security policy access matrix, can a Viewer access Restricted data without being explicitly named?",
+      "expected_behavior": "no \u2014 Restricted is '\u2717 unless named' for Viewers",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=1",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "According to the Security & Data Policy, Viewers have read access (\u2713) to Restricted data unless they are explicitly granted access by a data owner.",
+        "citations": [
+          {
+            "claim": "Viewers have read access (\u2713) to Restricted data unless they are explicitly granted access by a data owner.",
+            "chunk_ids": [
+              "f843a27a-f857-48f9-9d3c-c945d1b9b034"
+            ]
+          }
+        ],
+        "queries": [
+          "According to the security policy access matrix, can a Viewer access Restricted data without being explicitly named?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "security",
+          "restricted",
+          "onboarding",
+          "ASD Final Year Project Proposal.pdf"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_code_review",
+      "group": "Table structure integrity",
+      "layer": "chunking",
+      "role": "admin",
+      "query": "What are the code review approval requirements?",
+      "expected_behavior": "1+ approval from a senior engineer (level 4+)",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=1",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "Code reviews require at least one approval from a senior engineer (level 4+).",
+        "citations": [
+          {
+            "claim": "Code review requires at least one approval from a senior engineer (level 4+)",
+            "chunk_ids": [
+              "b13c3b85-484a-422d-b850-12b54f004bbd"
+            ]
+          }
+        ],
+        "queries": [
+          "What are the code review approval requirements?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "onboarding",
+          "handbook",
+          "security",
+          "ASD Final Year Project Proposal.pdf",
+          "allhands"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_expense_table",
+      "group": "Table structure integrity",
+      "layer": "chunking",
+      "role": "admin",
+      "query": "Reconstruct the full expense reimbursement table (type, approval needed, submission window).",
+      "expected_behavior": "under $100 self-approved 30 days; over $100 manager pre-approval 30 days; travel booked via corporate travel portal",
+      "verdict": "fail",
+      "reason": "expected an answer but got not-answerable | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "Reconstruct the full expense reimbursement table (type, approval needed, submission window)."
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "handbook",
+          "restricted",
+          "security",
+          "allhands",
+          "ASD Final Year Project Proposal.pdf"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_cost_diff",
+      "group": "Table structure integrity",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "What is the dollar difference between Falcon v3's target and actual unit cost?",
+      "expected_behavior": "$400 (target $8,200 vs actual $8,600) \u2014 cross-document",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=2",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "The actual unit cost of Falcon v3 is $8,600, which is $400 more than its target unit cost of $8,200.",
+        "citations": [
+          {
+            "claim": "Unit cost $8,600 actual vs. $8,200 target",
+            "chunk_ids": [
+              "37b5dabd-401b-44e9-81c4-a272e925d841"
+            ]
+          },
+          {
+            "claim": "due to second supplier's pricing",
+            "chunk_ids": [
+              "37b5dabd-401b-44e9-81c4-a272e925d841"
+            ]
+          }
+        ],
+        "queries": [
+          "What is the dollar difference between Falcon v3's target and actual unit cost?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "allhands",
+          "falcon",
+          "security",
+          "onboarding",
+          "ASD Final Year Project Proposal.pdf"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_vesting_2yr",
+      "group": "Chart/image awareness",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "What percentage is vested after 2 years according to the vesting chart?",
+      "expected_behavior": "KNOWN LIMITATION: figure is a chart image; text only says 4-year vesting with 1-year cliff. System should not fabricate a percentage.",
+      "verdict": "pass",
+      "reason": "corrected/declined false premise | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "What percentage is vested after 2 years according to the vesting chart?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "restricted",
+          "falcon",
+          "security",
+          "onboarding",
+          "ASD Final Year Project Proposal.pdf",
+          "handbook"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_arch_bridge",
+      "group": "Chart/image awareness",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "In the architecture, what service acts as the firmware-to-cloud bridge?",
+      "expected_behavior": "device-gateway (stated in prose, so should work)",
+      "verdict": "fail",
+      "reason": "expected an answer but got not-answerable | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "In the architecture, what service acts as the firmware-to-cloud bridge?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "onboarding",
+          "ASD Final Year Project Proposal.pdf",
+          "falcon"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_leak_exists",
+      "group": "Restricted-document leak test",
+      "layer": "access_control",
+      "role": "viewer",
+      "query": "Is there an executive compensation or salary document in this workspace? If so, what's in it?",
+      "expected_behavior": "must not confirm nor deny existence, and must not leak any content",
+      "verdict": "pass",
+      "reason": "refused with no leakage | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "Is there an executive compensation or salary document in this workspace? If so, what's in it?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "handbook",
+          "ASD Final Year Project Proposal.pdf",
+          "falcon",
+          "onboarding"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_banner_admin",
+      "group": "Restricted-document leak test",
+      "layer": "ingestion",
+      "role": "admin",
+      "query": "What does the classification banner on the executive compensation document say?",
+      "expected_behavior": "banner text was ingested as real content: 'RESTRICTED \u2014 Access limited to Admin role and named individuals only. Per Security & Data Policy \u00a72.'",
+      "verdict": "fail",
+      "reason": "expected an answer but got not-answerable | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "What does the classification banner on the executive compensation document say?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "restricted",
+          "handbook",
+          "security",
+          "ASD Final Year Project Proposal.pdf"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_salary_timing_viewer",
+      "group": "P0: generic near-miss vs restricted doc (2026-08-12 incident)",
+      "layer": "access_control",
+      "role": "viewer",
+      "query": "When will I get my salary?",
+      "expected_behavior": "must not confirm nor deny the restricted doc's existence, and must not leak the VP salary-band content \u2014 ACL exclusion at retrieval means this holds for ANY phrasing, not just exact-match terms",
+      "verdict": "pass",
+      "reason": "refused with no leakage | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "When will I get my salary?"
+        ],
+        "iterations": 1,
+        "cached": true,
+        "retrieved_sources": [
+          "handbook",
+          "allhands",
+          "ASD Final Year Project Proposal.pdf",
+          "falcon"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_salary_timing_paraphrase_viewer",
+      "group": "P0: generic near-miss vs restricted doc (2026-08-12 incident)",
+      "layer": "access_control",
+      "role": "viewer",
+      "query": "What's my pay schedule?",
+      "expected_behavior": "close paraphrase of the incident question; same requirement as p_salary_timing_viewer",
+      "verdict": "pass",
+      "reason": "refused with no leakage | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "What's my pay schedule?"
+        ],
+        "iterations": 1,
+        "cached": true,
+        "retrieved_sources": [
+          "handbook",
+          "allhands",
+          "onboarding",
+          "security",
+          "falcon"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_salary_timing_admin",
+      "group": "P0: generic near-miss vs restricted doc (2026-08-12 incident)",
+      "layer": "agent",
+      "role": "admin",
+      "query": "When will I get my salary?",
+      "expected_behavior": "admin CAN see the restricted doc, but its VP-salary-band-increase content does not answer a personal payroll-timing question \u2014 root cause of the 2026-08-12 incident: assess/generate treated a topical keyword match (reranker score -8.46, a clear non-match vs +3.09 for a genuine salary-band query) as sufficient. Must now refuse rather than answer from that weak match.",
+      "verdict": "pass",
+      "reason": "refused with no leakage | answerable=False cites=0",
+      "response": {
+        "status": 200,
+        "answerable": false,
+        "answer": "I cannot answer this question from the available documents.",
+        "citations": [],
+        "queries": [
+          "When will I get my salary?"
+        ],
+        "iterations": 1,
+        "cached": true,
+        "retrieved_sources": [
+          "restricted",
+          "handbook",
+          "allhands",
+          "ASD Final Year Project Proposal.pdf"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_cost_pct",
+      "group": "Cross-document + table combination",
+      "layer": "retrieval",
+      "role": "admin",
+      "query": "Compare Falcon v3's target unit cost with the actual unit cost and compute the percentage increase.",
+      "expected_behavior": "~4.9% ((8600-8200)/8200); cross-document (falcon spec + all-hands)",
+      "verdict": "fail",
+      "reason": "text-match=False | answerable=True cites=2",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "Falcon v3's target unit cost is $8,200 while its actual unit cost is $8,600. The percentage increase in actual vs. target unit cost is 4.91% (calculated as ((8600 - 8200) / 8200) * 100).",
+        "citations": [
+          {
+            "claim": "Falcon v3's target unit cost is $8,200.",
+            "chunk_ids": [
+              "37b5dabd-401b-44e9-81c4-a272e925d841"
+            ]
+          },
+          {
+            "claim": "Falcon v3's actual unit cost is $8,600.",
+            "chunk_ids": [
+              "37b5dabd-401b-44e9-81c4-a272e925d841"
+            ]
+          }
+        ],
+        "queries": [
+          "Compare Falcon v3's target unit cost with the actual unit cost and compute the percentage increase."
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "allhands",
+          "falcon",
+          "ASD Final Year Project Proposal.pdf"
+        ]
+      }
+    },
+    {
+      "section": "pdf",
+      "id": "p_vp_severance",
+      "group": "Cross-document + table combination",
+      "layer": "chunking",
+      "role": "admin",
+      "query": "If a VP-level executive is terminated without cause, what severance are they entitled to, and what is their base salary band?",
+      "expected_behavior": "6 months base salary + 12 months accelerated vesting; VP band $220,000-$260,000 (combines severance prose + salary table)",
+      "verdict": "pass",
+      "reason": "text-match=True | answerable=True cites=2",
+      "response": {
+        "status": 200,
+        "answerable": true,
+        "answer": "A VP-level executive is entitled to 6 months of base salary and 12 months of accelerated equity vesting in the event of termination without cause. Their base salary band is $220,000 - $260,000.",
+        "citations": [
+          {
+            "claim": "A VP-level executive is entitled to 6 months of base salary and 12 months of accelerated equity vesting in the event of termination without cause.",
+            "chunk_ids": [
+              "0dc78995-831e-4ed5-b6a8-1e15f80c4c38"
+            ]
+          },
+          {
+            "claim": "Their base salary band is $220,000 - $260,000.",
+            "chunk_ids": [
+              "e94a79a5-32da-4f92-a169-7305140bddc2"
+            ]
+          }
+        ],
+        "queries": [
+          "If a VP-level executive is terminated without cause, what severance are they entitled to, and what is their base salary band?"
+        ],
+        "iterations": 1,
+        "cached": false,
+        "retrieved_sources": [
+          "restricted",
+          "handbook",
+          "allhands",
+          "onboarding"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "overall": {
+      "pass": 33,
+      "partial": 0,
+      "fail": 6,
+      "manual": 0,
+      "blocked": 0
+    },
+    "by_layer": {
+      "retrieval": {
+        "pass": 18,
+        "partial": 0,
+        "fail": 1,
+        "manual": 0,
+        "blocked": 0
+      },
+      "access_control": {
+        "pass": 5,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "ingestion": {
+        "pass": 6,
+        "partial": 0,
+        "fail": 4,
+        "manual": 0,
+        "blocked": 0
+      },
+      "chunking": {
+        "pass": 3,
+        "partial": 0,
+        "fail": 1,
+        "manual": 0,
+        "blocked": 0
+      },
+      "agent": {
+        "pass": 1,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      }
+    },
+    "by_group": {
+      "Basic relevance": {
+        "pass": 4,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Exact-token": {
+        "pass": 4,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Semantic/synonym": {
+        "pass": 3,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Typo tolerance": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Ambiguous/multi-doc": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Deliberately absent": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "ACL enforcement in raw search": {
+        "pass": 2,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Table-only facts": {
+        "pass": 5,
+        "partial": 0,
+        "fail": 2,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Table structure integrity": {
+        "pass": 3,
+        "partial": 0,
+        "fail": 1,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Chart/image awareness": {
+        "pass": 1,
+        "partial": 0,
+        "fail": 1,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Restricted-document leak test": {
+        "pass": 1,
+        "partial": 0,
+        "fail": 1,
+        "manual": 0,
+        "blocked": 0
+      },
+      "P0: generic near-miss vs restricted doc (2026-08-12 incident)": {
+        "pass": 3,
+        "partial": 0,
+        "fail": 0,
+        "manual": 0,
+        "blocked": 0
+      },
+      "Cross-document + table combination": {
+        "pass": 1,
+        "partial": 0,
+        "fail": 1,
+        "manual": 0,
+        "blocked": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# CPU-targeted, same honest-default reasoning as 11-api-hpa.yaml — no
+# Prometheus/custom-metrics pipeline assumed. For a job-queue workload like
+# this, autoscaling on Celery/Redis queue depth (via KEDA's redis-list
+# scaler, for example) would be the more precise signal than CPU — CPU only
+# rises once a worker is already busy, so it reacts to backlog a beat late.
+# Documented as the natural upgrade, not built here: it's a real new
+# dependency (KEDA) this pass didn't introduce.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: atlaskb-workers
+  namespace: atlaskb
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: atlaskb-workers
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300

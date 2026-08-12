@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-08-12T14:15:44.604128+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "levels": [
+    {
+      "concurrent_users": 50,
+      "duration_s": 33.7858507920173,
+      "total_requests": 369,
+      "throughput_rps": 10.9,
+      "cached_traffic": {
+        "requests": 354,
+        "ok": 354,
+        "errors": 0,
+        "rate_limited_429": 0,
+        "error_rate": 0.0,
+        "p50_ms": 13.0,
+        "p95_ms": 243.6,
+        "p99_ms": 464.4
+      },
+      "fresh_chat": {
+        "requests": 15,
+        "ok": 14,
+        "errors": 1,
+        "rate_limited_429": 1,
+        "error_rate": 0.0667,
+        "p50_ms": 4881.4,
+        "p95_ms": 22344.1,
+        "p99_ms": 22344.1
+      }
+    },
+    {
+      "concurrent_users": 200,
+      "duration_s": 49.39439862500876,
+      "total_requests": 1287,
+      "throughput_rps": 26.1,
+      "cached_traffic": {
+        "requests": 1234,
+        "ok": 1234,
+        "errors": 0,
+        "rate_limited_429": 0,
+        "error_rate": 0.0,
+        "p50_ms": 14.7,
+        "p95_ms": 19270.7,
+        "p99_ms": 19708.4
+      },
+      "fresh_chat": {
+        "requests": 53,
+        "ok": 32,
+        "errors": 21,
+        "rate_limited_429": 21,
+        "error_rate": 0.3962,
+        "p50_ms": 7815.2,
+        "p95_ms": 28687.6,
+        "p99_ms": 32746.8
+      }
+    }
+  ]
+}

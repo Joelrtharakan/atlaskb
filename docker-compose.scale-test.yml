@@ -1,0 +1,20 @@
+# Trust Layer T11.3 local verification: `docker compose -f docker-compose.yml
+# -f docker-compose.scale-test.yml up -d --scale api=3` runs 3 API replicas
+# behind nginx, proving the app is stateless enough to scale horizontally
+# without a real k8s cluster. Not for production use -- see infra/k8s/ for
+# the real deployment path.
+services:
+  api:
+    # The base file publishes a single fixed host port (8000:8000), which
+    # can't be done 3x for 3 replicas -- drop it here so only nginx binds
+    # the host port, and every replica is reached through it.
+    ports: []
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./infra/docker/nginx.scale-test.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - api

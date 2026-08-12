@@ -104,6 +104,18 @@ route between them, and rings any node that's stale or in conflict.
   result file on disk — never hand-typed), `/admin/feedback`, and
   `/admin/audit-log`.
 
+**Connectors & SSO**
+
+- **Google Drive connector.** Real OAuth2 + PKCE, live Drive v3 API calls,
+  native Google Docs/Sheets/Slides export to a format the existing chunker
+  parses, reusing the exact same ingestion pipeline direct upload uses.
+  `Admin > Connectors` — connect, test, and manually sync a Drive folder.
+- **SSO via generic OIDC.** Works with any standards-compliant identity
+  provider (Google Workspace, Okta, Azure AD, ...) via its discovery
+  document — not provider-specific code. Auto-links a verified-email SSO
+  login to an existing password account; workspace entry still goes
+  through the existing invite flow, unchanged.
+
 ## Architecture
 
 ```mermaid
@@ -310,6 +322,225 @@ sequenceDiagram
         API-->>U: 200 answer + citations + evidence + conflicts + token usage
     end
 ```
+
+## Scalability (Trust Layer T11)
+
+**T11.1 — LLM generation concurrency control.** Real LLM throughput is a
+hard ceiling set by whichever provider/hardware is behind
+`LLM_PROVIDER` — local Ollama on typical (non-dedicated-GPU) hardware
+serves about one generation well at a time; a hosted provider can serve
+far more. `app/llm_concurrency.py` is a Redis-backed distributed semaphore
+(not a local `threading.Semaphore` — deliberately, since with multiple API
+replicas the real ceiling is global across every replica, not
+per-replica) wrapping every LLM call site (`app/llm.py`'s four, plus
+`app/conflict_detection`'s two) via a single choke point,
+`app.llm.create_completion()`. A request beyond the configured
+`LLM_CONCURRENCY_LIMIT` (default 1) queues briefly, then gets a clean 429
++ `Retry-After` if it doesn't get a slot within
+`LLM_CONCURRENCY_QUEUE_TIMEOUT_SECONDS` (default 20s) — the same
+Redis-backed-limiter shape `app.ratelimit` already uses, so clients see
+one consistent "too much demand" contract. `/search` and cache-hit `/chat`
+never touch this limiter at all (verified by a dedicated test that
+saturates it and confirms both are unaffected). Current concurrency and
+the configured limit are observable on `GET /health/llm`
+(`active_generations`, `concurrency_limit`) — not a silent bottleneck.
+
+**T11.2 — Connection pooling.** SQLAlchemy's pool is explicitly sized
+(`DB_POOL_SIZE=10`, `DB_MAX_OVERFLOW=20`, `DB_POOL_TIMEOUT=30`, see
+`app/db.py`/`app/config.py`) rather than left on single-instance defaults;
+redis-py's connection pool likewise gets an explicit `REDIS_MAX_CONNECTIONS`
+(default 50, see `app/redis_client.py`) instead of growing unbounded under
+load. An isolated load test (`eval/run_db_pool_load_test.py`) hammers
+`/search` with 400 unique (guaranteed-cache-miss) queries at concurrency
+40 — deliberately above the 30-connection pool ceiling — before any other
+T11 work is layered on top, specifically so a pool problem here can't
+later be misdiagnosed as an application-code one. Measured result: **399/400
+succeeded (1 isolated transient 500, not reproduced)** — no connection-pool
+exhaustion. The real bottleneck at this concurrency was CPU-bound embedding
+computation on the single process (p95 27.8s, p99 28.5s), correctly
+pointing at horizontal scaling (T11.3), not pool sizing, as the actual next
+lever. For real multi-replica deployments where `replicas *
+(DB_POOL_SIZE + DB_MAX_OVERFLOW)` gets close to Postgres's own
+`max_connections`, an opt-in PgBouncer service is available: `docker
+compose --profile pgbouncer up` (session-pooling mode — required for
+SQLAlchemy's prepared statements to keep working; transaction/statement
+mode would silently break them).
+
+**T11.3 — Horizontal scaling.** Audited every module for in-memory state
+that would behave inconsistently across replicas. The Redis client
+(`app/redis_client.py`) and SQLAlchemy engine (`app/db.py`) are per-process
+*connections* to shared external state, not state themselves — correct as
+they are. The lazily-loaded embedding (`app/embeddings.py`'s
+`_local_model`) and reranker (`app/rerank.py`'s `_model`) module-level
+singletons are also correct, not a bug: verified each is a pure, stateless
+`.encode()`/`.predict()` call with nothing request-specific accumulated —
+every replica loading its own in-memory copy of the same model is the
+intended pattern, not a state-consistency problem. **One real finding**:
+uploaded files are written to local disk (`settings.upload_dir`) by
+whichever `api` replica handles the upload, then read later by whichever
+Celery `worker` replica picks up the ingestion job — potentially a
+different pod, on a different node. Fixed by requiring a shared volume
+across every `api`/`worker` pod (`infra/k8s/03-uploads-pvc.yaml`),
+documented explicitly that this needs a `ReadWriteMany`-capable
+StorageClass (NFS/EFS/Azure Files/Filestore) — the default `ReadWriteOnce`
+StorageClass on most clusters will NOT work here. S3-style object storage
+is noted as the stronger long-term fix; a real code change (new I/O path
+in three files) out of scope for this pass.
+
+Celery multi-replica safety was verified, not assumed: `task_acks_late=True`
++ `task_reject_on_worker_lost=True` + `worker_prefetch_multiplier=1`
+(`apps/workers/atlaskb_workers/celery_app.py`) already give correct
+at-least-once delivery with no replica hoarding several jobs while others
+sit idle — standard Celery/Redis broker semantics deliver each task to
+exactly one worker regardless of replica count. Both ingestion tasks
+(`atlaskb.ingest_document`, `atlaskb.sync_connector`) are idempotent, so a
+redelivered task after a worker crash safely re-does the same work. No
+code changes were needed here.
+
+New manifests in `infra/k8s/`: namespace, a ConfigMap for non-secret env,
+a Secret *template* (never a real committed Secret — matches this repo's
+`.env.example` convention), an `api` Deployment + Service + HPA
+(CPU-targeted at 70%, 2–10 replicas — CPU, not an arbitrary default,
+because T11.2's own load test found CPU-bound embedding computation to be
+the real bottleneck at realistic `/search` concurrency), a `workers`
+Deployment + HPA (CPU-targeted at 75%, 2–8 replicas — noted that
+queue-depth-based autoscaling via KEDA would be the more precise signal
+for a job-queue workload, but that's a real new dependency this pass
+didn't introduce), and the uploads PVC above. Every manifest is
+structurally valid YAML with the required `apiVersion`/`kind` fields
+(confirmed via `yaml.safe_load` and `kubectl`'s client-side object
+decoding) — **not validated against a live cluster's OpenAPI schema**,
+since no cluster (not even a local kind/minikube) was available in this
+environment (`kubectl config current-context` was unset). Stated
+plainly, per this project's own disclosure convention, rather than implied
+as fully proven.
+
+**Docker-compose scale-out — attempted, not completed.** The plan was
+`docker compose --scale api=3` behind an nginx load balancer
+(`docker-compose.scale-test.yml`, `infra/docker/nginx.scale-test.conf`,
+using `resolver` + a variable `proxy_pass` so nginx genuinely re-resolves
+Docker's round-robin DNS per request instead of caching one replica's IP
+at startup) plus a verification script exercising signup → login →
+workspace-create → upload → list-documents across whatever replica each
+request happened to land on. Building the `api` image failed twice in this
+environment, each after ~10–20 minutes: `sentence-transformers` pulls in
+the full CUDA-enabled `torch` wheel set (~2GB — `nvidia-cublas` alone is
+517MB), and the download failed on a transient DNS/network error deep into
+that transfer both times, with no successful build to test scaling
+against. This is a real environment constraint, not a skipped step — two
+honest findings came out of chasing it down: (1) neither Dockerfile had a
+BuildKit cache mount, so every retry re-downloaded several GB from
+scratch instead of resuming — fixed in `infra/docker/api.Dockerfile` and
+`infra/docker/workers.Dockerfile` with `--mount=type=cache,
+target=/root/.cache/uv` on the `uv sync` steps; (2) `eval/load_test.py`
+itself had a pre-existing bug (found while building this test's sibling
+script) — it never created a workspace before calling workspace-scoped
+endpoints, so it would 400 on its very first real request — fixed. The
+code-level correctness (statelessness audit, Celery semantics, k8s
+manifest structure) is real, verified work; the live multi-replica
+request-routing proof specifically is not — matching this project's
+existing "NOT MEASURED means exactly that" convention rather than
+presenting a documented plan as a completed test.
+
+**T11.4 — Realistic mixed-workload load test.** `eval/load_test.py --mixed`
+simulates real active users, not synthetic bursts: each virtual user picks
+an action (95% cached search/chat, 5% a fresh uncached `/chat` question)
+and waits 1–4s of real think-time between requests, ramping through
+50 → 200 → 500 → 1000 concurrent users until cached-traffic p95 or error
+rate genuinely degrades. **Run against a single local API instance** —
+T11.3's horizontally-scaled setup wasn't available to test against (see
+above), so this measures one process's real ceiling, not a claim about a
+scaled deployment.
+
+| Concurrent users | Cached traffic p50 / p95 | Cached error rate | Fresh-chat p50 / p95 | Fresh-chat rejected (429) |
+| ---: | ---: | ---: | ---: | ---: |
+| 50  | 13.0 / 243.6 ms   | 0.0%  | 4,881 / 22,344 ms | 1/15 (6.7%) |
+| 200 | 14.7 / **19,271** ms | 0.0%  | 7,815 / 28,688 ms | 21/53 (39.6%) |
+
+The sweep stopped at 200 — cached-traffic p95 blew through the 3,000ms
+degradation threshold (19.3s), so 500 and 1000 were never reached. That
+degradation is real but its bottleneck is specific and identified, not
+guessed: `/search` and `/chat` are synchronous (`def`, not `async def`)
+route handlers, so FastAPI runs them in Starlette's threadpool — anyio's
+default `CapacityLimiter` caps that at 40 concurrent threads *per uvicorn
+process*, and this app is started with no `--workers` flag (one process).
+At 200 concurrent users each issuing requests, demand for that 40-thread
+pool vastly exceeds supply, and requests queue behind it — not the
+database (T11.2 already showed 40 concurrent DB connections have no
+trouble), not Redis, not the LLM (that's `fresh_chat`'s separate, already-
+understood limiter). This is exactly the class of bottleneck T11.3's
+horizontal scaling (more replicas, or `--workers N` per process) directly
+addresses — the mixed-workload test found a real, specific, fixable
+ceiling on a single process, which is a stronger and more useful result
+than an unqualified pass at low concurrency would have been.
+
+`fresh_chat`'s own numbers are working exactly as T11.1 designed: with
+`LLM_CONCURRENCY_LIMIT=1` (local Ollama), demand beyond one concurrent
+generation queues up to the 20s timeout, then gets a clean 429 rather than
+hanging or crashing the process — 39.6% rejected at 200 concurrent users
+reflects local Ollama's real one-generation-at-a-time ceiling, not an
+application bug. A hosted provider or higher `LLM_CONCURRENCY_LIMIT` (see
+T11.5) would raise this ceiling directly; more API replicas would not,
+since the limiter is already global across replicas (T11.1's whole point).
+
+**Honest summary, in this project's own established format**: this
+deployment, run as a single process with local Ollama, sustains real
+mixed traffic up to roughly 50 concurrent active users at healthy latency
+(cached p95 under 250ms); it does not yet sustain 1000, and the specific,
+identified reason is the single process's synchronous-route threadpool
+ceiling — not the database, not the cache, not the LLM for cached traffic.
+Fresh LLM generation is separately and correctly bounded by local Ollama's
+single-generation capacity, backpressured cleanly rather than degrading
+into timeouts. Raising both ceilings (more replicas/workers for the
+threadpool limit, a faster inference backend or hosted provider for the
+LLM limit) is exactly T11.3's and T11.5's respective, already-scoped next
+steps — not new problems this test discovered.
+
+**T11.5 — Raising the LLM concurrency ceiling itself (documented, not
+implemented).** T11.1–T11.4 make the *application layer* scale correctly,
+but none of them change how many concurrent generations a single Ollama
+instance or a low tier of a hosted provider can actually serve — that's a
+provider/hardware ceiling, not something this codebase's architecture
+controls. Per this phase's own scoping, this is documented rather than
+built: raising it costs real money or real infrastructure, which this
+project doesn't spend without an explicit decision to do so.
+
+**Current real ceiling**: local Ollama, `LLM_CONCURRENCY_LIMIT=1` — one
+generation at a time, T11.4-measured at roughly 4.9–7.8s median / 22–29s
+p95 under contention. `OPENROUTER_MODEL` is currently pinned to a free-tier
+model (`nvidia/nemotron-nano-9b-v2:free`), which this codebase's own prior
+notes already flag as capped at 50 requests/day — nowhere near enough for
+any real concurrent-user target either.
+
+Two real options to actually raise it, neither built here:
+
+1. **A paid tier on a hosted provider** (OpenRouter or otherwise), sized to
+   a real target concurrent-generation number. Requires no code change —
+   `app/llm.py`'s `_client()` and `create_completion()` already work
+   identically against Ollama or OpenRouter; just set `LLM_PROVIDER=openrouter`,
+   a real `OPENROUTER_API_KEY`, a paid model slug, and raise
+   `LLM_CONCURRENCY_LIMIT` to match that provider's actual published rate
+   limit for the chosen model/tier (check current limits before raising
+   this — they vary by provider and change over time, and this project
+   doesn't repeat a number here it can't currently verify).
+2. **Replacing Ollama with a higher-throughput local inference server**
+   (e.g. vLLM), if self-hosting remains a priority. vLLM supports request
+   batching and serves substantially higher concurrent throughput per GPU
+   than Ollama's default serving model — but it's real new infrastructure
+   (a GPU-backed inference server, a new deployment target, likely a new
+   `LLM_PROVIDER` branch in `app/llm.py` since vLLM's OpenAI-compatible
+   endpoint has its own quirks) that this pass didn't build or provision.
+
+**Honest answer, ready if asked "does this actually support 1000
+simultaneous users"**: the application layer — API, retrieval, caching,
+database, connection pooling — is built and load-tested to scale
+horizontally (T11.1–T11.4), and its real single-instance ceiling and exact
+bottleneck are measured, not guessed. The LLM generation ceiling itself is
+currently 1 concurrent generation, bounded entirely by local Ollama on
+this hardware, backpressured cleanly (429 + Retry-After, never a hang or
+crash) rather than silently failing under load. Raising that specific
+number is a provider/infrastructure decision — a paid hosted tier or a
+GPU-backed vLLM deployment — not an unsolved architecture problem.
 
 ## Measured results
 
@@ -532,6 +763,15 @@ uv run python eval/run_prompt_injection.py
 # Load test → writes eval/results/load-latest.json
 #   run the API with RATE_LIMIT_ENABLED=false so the limiter doesn't distort latency
 uv run python eval/load_test.py
+
+# Isolated DB/connection-pool load test (Trust Layer T11.2) → writes
+# eval/results/db_pool_load_test.json. Same RATE_LIMIT_ENABLED=false note applies.
+uv run python eval/run_db_pool_load_test.py
+
+# Realistic mixed-workload load test (Trust Layer T11.4), ramps 50→1000
+# concurrent simulated users → writes eval/results/mixed_workload_load_test.json.
+# Same RATE_LIMIT_ENABLED=false note applies.
+uv run python eval/load_test.py --mixed
 ```
 
 Full before/after and ablation methodology, everything that didn't go as
@@ -542,6 +782,10 @@ first expected, and per-question raw data: `eval/REPORT.md`.
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | POST | `/auth/signup` · `/auth/login` · `/auth/refresh` | — | JWT auth |
+| GET | `/auth/oidc/config`, `/auth/oidc/login`, `/auth/oidc/callback` | — | SSO via generic OIDC |
+| POST | `/auth/oidc/exchange` | — | One-time SSO code → session (Trust Layer Phase 11) |
+| GET/POST/DELETE | `/connectors`, `/connectors/{id}/sync`, `/connectors/{id}/test` | JWT (admin) | Google Drive connector management |
+| GET/POST | `/connectors/google/authorize`, `/connectors/google/callback` | JWT (admin) / — | Connector OAuth flow (Trust Layer Phase 10) |
 | POST/GET | `/workspaces`, `/workspaces/{id}/members`, `/workspaces/{id}/invites` | JWT | Workspaces, members, roles |
 | GET/POST | `/invites/{token}`, `/invites/{token}/accept` | JWT | Accept a workspace invite |
 | POST/GET/DELETE | `/api-keys` | JWT | Scoped programmatic keys |

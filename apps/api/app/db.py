@@ -13,7 +13,19 @@ if not settings.database_url:
         "(see README). If your .env is elsewhere, export DATABASE_URL before starting."
     )
 
-engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True,
+    # Trust Layer T11.2: explicit, configurable pool sizing so a horizontally
+    # scaled deployment's real connection ceiling (replicas * (pool_size +
+    # max_overflow)) is a deliberate number checked against Postgres's own
+    # max_connections, not whatever SQLAlchemy's single-instance defaults
+    # happened to be.
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
+    pool_timeout=settings.db_pool_timeout,
+    future=True,
+)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 

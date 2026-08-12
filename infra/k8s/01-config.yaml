@@ -1,0 +1,28 @@
+# Non-secret configuration, shared by the api and workers Deployments.
+# Secrets (DATABASE_URL, JWT_SECRET, OPENROUTER_API_KEY, connector/OIDC
+# credentials) belong in a Secret, deliberately NOT here — see
+# 02-secret.yaml.template, never commit a real Secret manifest.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlaskb-config
+  namespace: atlaskb
+data:
+  LOG_LEVEL: "INFO"
+  UPLOAD_DIR: "/data/uploads"
+  EMBEDDING_BACKEND: "local"
+  EMBEDDING_DEVICE: "cpu"
+  LLM_PROVIDER: "ollama"
+  # Trust Layer T11.1 — real ceiling is provider/hardware-specific; raise
+  # explicitly for a hosted provider or dedicated GPU inference nodes.
+  LLM_CONCURRENCY_LIMIT: "1"
+  LLM_CONCURRENCY_QUEUE_TIMEOUT_SECONDS: "20"
+  # Trust Layer T11.2 — per-replica pool ceiling; keep
+  # (api replica count) * (DB_POOL_SIZE + DB_MAX_OVERFLOW) comfortably under
+  # Postgres's own max_connections, or route through PgBouncer instead.
+  DB_POOL_SIZE: "10"
+  DB_MAX_OVERFLOW: "20"
+  DB_POOL_TIMEOUT: "30"
+  REDIS_MAX_CONNECTIONS: "50"
+  RATE_LIMIT_ENABLED: "true"
+  CACHE_ENABLED: "true"

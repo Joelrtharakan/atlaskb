@@ -16,7 +16,15 @@ _client: redis.Redis | None = None
 def get_redis() -> redis.Redis:
     global _client
     if _client is None:
-        _client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+        # Trust Layer T11.2: redis-py's ConnectionPool has no cap by default,
+        # so without an explicit max_connections it grows unbounded under
+        # load instead of failing predictably — the same silent-limit
+        # problem this phase closes for Postgres via db_pool_size/overflow.
+        _client = redis.Redis.from_url(
+            settings.redis_url,
+            decode_responses=True,
+            max_connections=settings.redis_max_connections,
+        )
     return _client
 
 

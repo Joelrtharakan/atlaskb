@@ -193,6 +193,16 @@
      "query": "What does the classification banner on the executive compensation document say?", "expected_behavior": "banner text was ingested as real content: 'RESTRICTED — Access limited to Admin role and named individuals only. Per Security & Data Policy §2.'",
      "judge": {"type": "chat_contains", "answerable": true, "any_of": [["restricted", "admin role", "named individuals", "security & data policy"]]}},
 
+    {"id": "p_salary_timing_viewer", "endpoint": "chat", "group": "P0: generic near-miss vs restricted doc (2026-08-12 incident)", "layer": "access_control", "role_context": "viewer",
+     "query": "When will I get my salary?", "expected_behavior": "must not confirm nor deny the restricted doc's existence, and must not leak the VP salary-band content — ACL exclusion at retrieval means this holds for ANY phrasing, not just exact-match terms",
+     "judge": {"type": "chat_refuse", "must_not_contain": ["310", "340", "220", "260", "170", "200", "10%", "april 1", "severance", "equity refresh", "salary band"]}},
+    {"id": "p_salary_timing_paraphrase_viewer", "endpoint": "chat", "group": "P0: generic near-miss vs restricted doc (2026-08-12 incident)", "layer": "access_control", "role_context": "viewer",
+     "query": "What's my pay schedule?", "expected_behavior": "close paraphrase of the incident question; same requirement as p_salary_timing_viewer",
+     "judge": {"type": "chat_refuse", "must_not_contain": ["310", "340", "220", "260", "170", "200", "10%", "april 1", "severance", "equity refresh", "salary band"]}},
+    {"id": "p_salary_timing_admin", "endpoint": "chat", "group": "P0: generic near-miss vs restricted doc (2026-08-12 incident)", "layer": "agent", "role_context": "admin",
+     "query": "When will I get my salary?", "expected_behavior": "admin CAN see the restricted doc, but its VP-salary-band-increase content does not answer a personal payroll-timing question — root cause of the 2026-08-12 incident: assess/generate treated a topical keyword match (reranker score -8.46, a clear non-match vs +3.09 for a genuine salary-band query) as sufficient. Must now refuse rather than answer from that weak match.",
+     "judge": {"type": "chat_refuse", "must_not_contain": ["310", "340", "220", "260", "170", "200", "10%", "april 1", "severance", "equity refresh", "salary band"]}},
+
     {"id": "p_cost_pct", "endpoint": "chat", "group": "Cross-document + table combination", "layer": "retrieval", "role_context": "admin",
      "query": "Compare Falcon v3's target unit cost with the actual unit cost and compute the percentage increase.", "expected_behavior": "~4.9% ((8600-8200)/8200); cross-document (falcon spec + all-hands)",
      "judge": {"type": "chat_contains", "answerable": true, "any_of": [["4.9", "4.88", "4.9%", "5%"]]}},

@@ -1,0 +1,52 @@
+# --pool=solo (see infra/docker/workers.Dockerfile) means one worker process
+# handles one ingestion job at a time — throughput scales by REPLICA count,
+# not by increasing concurrency inside one pod. Verified safe for multiple
+# replicas: app/celery_client.py's producer + atlaskb_workers/celery_app.py's
+# consumer already set task_acks_late=True + task_reject_on_worker_lost=True
+# (a crashed worker's in-flight task is requeued, not lost or silently
+# dropped) and worker_prefetch_multiplier=1 (no single replica hoards
+# several jobs while others sit idle) — standard Celery/Redis broker
+# semantics deliver each task to exactly one worker, so N replicas
+# consuming the same queue load-balance correctly with no code changes
+# needed. Both ingestion tasks (atlaskb.ingest_document,
+# atlaskb.sync_connector) are idempotent, so an at-least-once redelivery
+# after a crash re-does the same work rather than corrupting anything.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlaskb-workers
+  namespace: atlaskb
+  labels:
+    app: atlaskb-workers
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlaskb-workers
+  template:
+    metadata:
+      labels:
+        app: atlaskb-workers
+    spec:
+      containers:
+        - name: worker
+          image: atlaskb-workers:latest  # build+push infra/docker/workers.Dockerfile to your registry
+          envFrom:
+            - configMapRef:
+                name: atlaskb-config
+            - secretRef:
+                name: atlaskb-secrets
+          volumeMounts:
+            - name: uploads
+              mountPath: /data/uploads
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "768Mi"
+            limits:
+              cpu: "2"
+              memory: "1536Mi"
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: atlaskb-uploads

@@ -1,0 +1,34 @@
+# Trust Layer T11.3 finding: uploaded files are written to local disk
+# (settings.upload_dir) by whichever `api` replica handles the upload
+# request, then read later by whichever Celery `worker` replica picks up
+# the ingestion job (app/ingest.py) — potentially a different pod, on a
+# different node, from the one that wrote it. Unlike every other piece of
+# app state (cache, rate limits, LLM concurrency, workspace epoch — all
+# Redis-backed), this is real state that was NOT already externalized.
+#
+# The fix here is infrastructure, not application code: every api and
+# worker pod must mount the SAME volume, which requires a StorageClass
+# supporting ReadWriteMany (RWX) — NFS, AWS EFS, Azure Files, GCP Filestore.
+# The default StorageClass on most clusters (EBS/PD/managed-disk-backed) is
+# ReadWriteOnce (RWO) ONLY and will NOT work here: a second pod scheduled
+# on a different node will fail to mount it. Set storageClassName below to
+# an RWX-capable class in your cluster before applying.
+#
+# For real production scale, moving upload storage to S3-compatible object
+# storage (writing via presigned URLs, reading via the SDK) removes this
+# shared-filesystem requirement entirely — a stronger fix than RWX NFS, but
+# a real code change (new dependency, new I/O path in app/routers/documents.py,
+# app/ingest.py, app/connectors/sync.py) out of scope for this pass;
+# documented here as the natural next step, not silently deferred.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlaskb-uploads
+  namespace: atlaskb
+spec:
+  accessModes:
+    - ReadWriteMany
+  # storageClassName: efs-sc   # <- set to your cluster's RWX-capable class
+  resources:
+    requests:
+      storage: 20Gi

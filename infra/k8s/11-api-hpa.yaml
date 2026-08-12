@@ -1,0 +1,33 @@
+# CPU-targeted: T11.2's own load test found the single-process CPU-bound
+# embedding/rerank computation to be the real throughput ceiling (not the DB
+# pool, not memory) at realistic /search concurrency — CPU is therefore the
+# metric that actually reflects load on this workload, not an arbitrary
+# default. A request-rate-based target (e.g. via a Prometheus adapter) would
+# be a reasonable upgrade if/when a metrics pipeline exists to support it,
+# but CPU is the honest, available-today choice.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: atlaskb-api
+  namespace: atlaskb
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: atlaskb-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    # Scale up fast (traffic spikes shouldn't wait), scale down cautiously
+    # (avoid flapping pods for a brief lull).
+    scaleUp:
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300

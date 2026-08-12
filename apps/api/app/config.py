@@ -25,6 +25,27 @@ class Settings(BaseSettings):
     database_url: str = ""
     redis_url: str = "redis://redis:6379/0"
 
+    # --- Connection pooling (Trust Layer T11.2) ---
+    # SQLAlchemy's QueuePool defaults (size 5, overflow 10) were sized for a
+    # single local-dev instance, not N horizontally-scaled API replicas
+    # sharing one Postgres. Made explicit and configurable rather than left
+    # implicit: pool_size + max_overflow is the ceiling of connections THIS
+    # process can open, and (replicas * that ceiling) must stay under
+    # Postgres's own max_connections (100 by default) — see T11.2's note in
+    # docker-compose.yml about PgBouncer for when replica_count grows enough
+    # that per-process pooling alone isn't sufficient.
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    # How long a request waits for a free connection before erroring, rather
+    # than hanging indefinitely if the pool is genuinely exhausted.
+    db_pool_timeout: int = 30
+    # redis-py's ConnectionPool has no cap by default -- unbounded growth
+    # under load is exactly the kind of silent, un-observed limit T11.2
+    # exists to close. Sized generously above db_pool_size + db_max_overflow
+    # since Redis is used for cache, rate limiting, and the T11.1 concurrency
+    # counter all from the same process.
+    redis_max_connections: int = 50
+
     # Browser origins allowed to call the API (the Next.js web app).
     cors_origins: list[str] = [
         "http://localhost:3000",

@@ -168,6 +168,21 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
+# A cross-encoder logit floor below which a chunk is a topical near-miss, not
+# real grounding — calibrated against this workspace's actual traffic: true
+# matches (e.g. "CEO's salary band" -> the comp doc) score +3 to +8, while a
+# topically-adjacent but wrong match (e.g. "when will I get my salary" -> the
+# same comp doc's VP band note) scored -8.5. 0.0 sits well inside that gap.
+# Only applied when a rerank score is actually present (rerank disabled, or
+# the fake test backend, leaves this a no-op).
+_RERANK_SUFFICIENCY_FLOOR = 0.0
+
+
+def _best_rerank_score(chunks: list[RetrievedChunk]) -> float | None:
+    scores = [c.rerank_score for c in chunks if c.rerank_score is not None]
+    return max(scores) if scores else None
+
+
 class GroundedAnswer:
     def __init__(
         self,
@@ -220,6 +235,15 @@ def assess_context(question: str, chunks: list[RetrievedChunk]) -> Assessment:
     generator will still refuse if they cannot actually ground an answer.
     """
     if not chunks:
+        return Assessment(sufficient=False, refined_query=question)
+
+    # A topical near-miss can still read as "sufficient" to an LLM skimming
+    # chunk text for keyword overlap (see _RERANK_SUFFICIENCY_FLOOR) — the
+    # reranker's relevance judgment overrides that before it ever reaches the
+    # model, so a low-relevance match triggers a re-query instead of a
+    # confident answer built on weak evidence.
+    best = _best_rerank_score(chunks)
+    if best is not None and best < _RERANK_SUFFICIENCY_FLOOR:
         return Assessment(sufficient=False, refined_query=question)
 
     try:
@@ -480,6 +504,15 @@ def generate_answer(
     """
     # With neither documents nor history there is nothing to ground an answer on.
     if not chunks and not history:
+        return GroundedAnswer(False, CANNOT_ANSWER, [])
+
+    # Backstop for the same low-relevance gate as assess_context: when the
+    # agent's iteration budget is exhausted before assess ever runs (e.g.
+    # max_iterations=1), generate is the only remaining place that sees the
+    # reranker's verdict on this chunk set, so it must refuse here too rather
+    # than let the generation LLM's own topical reading decide answerability.
+    best = _best_rerank_score(chunks)
+    if chunks and best is not None and best < _RERANK_SUFFICIENCY_FLOOR:
         return GroundedAnswer(False, CANNOT_ANSWER, [])
 
     client = _client()

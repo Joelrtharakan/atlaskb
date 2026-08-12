@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlaskb-api
+  namespace: atlaskb
+  labels:
+    app: atlaskb-api
+spec:
+  # Baseline replica count; the HPA (11-api-hpa.yaml) scales this up/down
+  # from here. Starting above 1 so a single pod restart is never a full outage.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlaskb-api
+  template:
+    metadata:
+      labels:
+        app: atlaskb-api
+    spec:
+      containers:
+        - name: api
+          image: atlaskb-api:latest  # build+push infra/docker/api.Dockerfile to your registry
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: atlaskb-config
+            - secretRef:
+                name: atlaskb-secrets
+          volumeMounts:
+            - name: uploads
+              mountPath: /data/uploads
+          # T11.3: sized for a real workload, not left as "whatever the
+          # cluster default is" — embeddings (local sentence-transformers)
+          # and reranking (cross-encoder) both run in-process and are
+          # CPU-bound, per T11.2's own load test finding (that's what
+          # actually bounded throughput there, not the DB pool).
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "768Mi"
+            limits:
+              cpu: "2"
+              memory: "1536Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: atlaskb-uploads
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlaskb-api
+  namespace: atlaskb
+spec:
+  selector:
+    app: atlaskb-api
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP
