@@ -15,6 +15,7 @@ import {
 } from "@/lib/how-it-works-content";
 
 import { AgentLoopInteractive } from "./AgentLoopInteractive";
+import { ArchitectureDiagram } from "./ArchitectureDiagram";
 import { DemoLivingAtlas } from "./DemoLivingAtlas";
 import { RaceVisualization } from "./RaceVisualization";
 import { Reveal } from "./Reveal";
@@ -91,8 +92,12 @@ export function HowItWorksContent() {
       <Section id="s2" n="02" kicker="Architecture" title="The system, mapped out." wide>
         <Reveal>
           <p className="max-w-2xl text-base leading-relaxed text-parchment/80">
-            Every piece of the stack has a place on the map.
+            Every piece of the stack has a place on the map — and a real edge
+            to the next stop, not just a box on a diagram.
           </p>
+        </Reveal>
+        <Reveal className="mt-8">
+          <ArchitectureDiagram landmarks={LANDMARKS} />
         </Reveal>
         <div className="mt-10 grid gap-px overflow-hidden rounded-sm border border-graphite/20 bg-graphite/20 sm:grid-cols-2">
           {LANDMARKS.map((l) => (
@@ -111,13 +116,23 @@ export function HowItWorksContent() {
 
       {/* 03 — Step by step */}
       <Section id="s3" n="03" kicker="Step by step" title="From upload to cited answer." band>
-        <ol className="mt-2 flex flex-col">
+        <ol className="relative mt-2 flex flex-col">
+          <span
+            aria-hidden
+            className="absolute bottom-6 left-[0.95rem] top-6 hidden w-px bg-gradient-to-b from-brass/50 via-graphite/25 to-transparent sm:block"
+          />
           {STEPS.map((s, i) => (
             <Reveal key={s.id}>
               <li
-                className={`flex gap-6 py-6 ${i > 0 ? "border-t border-graphite/15" : ""}`}
+                className={`relative flex gap-6 py-6 ${i > 0 ? "border-t border-graphite/15 sm:border-t-0" : ""}`}
               >
-                <span className="font-display text-3xl text-brass/50">{String(s.n).padStart(2, "0")}</span>
+                <span
+                  aria-hidden
+                  className="relative z-10 hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/50 bg-chart-navy font-mono text-xs text-brass sm:flex"
+                >
+                  {s.n}
+                </span>
+                <span className="font-display text-3xl text-brass/50 sm:hidden">{String(s.n).padStart(2, "0")}</span>
                 <div>
                   <p className="font-display text-xl text-parchment">{s.title}</p>
                   <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-parchment/70">{s.body}</p>
@@ -235,7 +250,7 @@ export function HowItWorksContent() {
                 {TOOLKIT.filter((t) => t.group === group).map((t) => (
                   <span
                     key={t.id}
-                    className="rounded-sm border border-graphite/25 bg-deep-chart/40 px-3 py-1.5 font-mono text-xs text-parchment/80"
+                    className="rounded-sm border border-graphite/25 border-l-2 border-l-brass/60 bg-deep-chart/40 px-3 py-1.5 font-mono text-xs text-parchment/80 transition-colors hover:border-brass/60 hover:bg-deep-chart/70 hover:text-parchment"
                   >
                     {t.label}
                   </span>

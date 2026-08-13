@@ -448,6 +448,12 @@ class MessageOut(BaseModel):
     # The requesting user's own feedback on this message, if any — never other
     # users' ratings, since this is "does this look right to you", not a tally.
     feedback: Literal["up", "down"] | None = None
+    # The full ChatResponse this assistant message was created from (citations,
+    # evidence, trust_summary, conflicts, retrieved chunks) — None for user
+    # messages and for assistant messages written before this field existed.
+    # Not re-validated as ChatResponse here: it's a frozen historical record,
+    # and a future ChatResponse shape change shouldn't break reading old rows.
+    response: dict | None = None
 
 
 class ConversationOut(BaseModel):

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import case, select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -17,17 +17,32 @@ router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 @router.get("", response_model=list[ConversationOut])
 def list_conversations(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_principal),
 ) -> list[Conversation]:
+    # "Most recent activity", not "most recently created" — a conversation
+    # with a new message today must sort above one merely started yesterday.
+    # last_activity falls back to created_at for a conversation with no
+    # messages yet (the brief window right after creation).
+    last_activity = (
+        select(Message.conversation_id, func.max(Message.created_at).label("last_at"))
+        .group_by(Message.conversation_id)
+        .subquery()
+    )
+    order_col = func.coalesce(last_activity.c.last_at, Conversation.created_at)
     return list(
         db.scalars(
             select(Conversation)
+            .outerjoin(last_activity, last_activity.c.conversation_id == Conversation.id)
             .where(
                 Conversation.workspace_id == principal.workspace_id,
                 Conversation.user_id == principal.user_id,
             )
-            .order_by(Conversation.created_at.desc())
+            .order_by(order_col.desc())
+            .limit(limit)
+            .offset(offset)
         )
     )
 
@@ -76,7 +91,27 @@ def get_conversation(
                 content=m.content,
                 created_at=m.created_at,
                 feedback=feedback_by_message.get(m.id),
+                response=m.response_json,
             )
             for m in messages
         ],
     )
+
+
+@router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_conversation(
+    conversation_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> None:
+    convo = db.get(Conversation, conversation_id)
+    # 404 (not 403) for another tenant's/user's conversation — same
+    # never-confirm-existence discipline as GET.
+    if (
+        convo is None
+        or convo.workspace_id != principal.workspace_id
+        or convo.user_id != principal.user_id
+    ):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Conversation not found")
+    db.delete(convo)  # cascades to messages/feedback — Conversation.messages is delete-orphan
+    db.commit()

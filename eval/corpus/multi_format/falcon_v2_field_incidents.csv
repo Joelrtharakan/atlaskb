@@ -1,0 +1,6 @@
+Incident ID,Date,Site,Falcon Model,Description,Resolution
+INC-2041,2025-02-11,Austin Plant 2,Falcon v2,Unexpected E-stop during pick cycle,Firmware patch 2.4.1 applied
+INC-2058,2025-03-04,Reno DC,Falcon v2,Gripper misalignment on tray 3,Recalibrated gripper offset
+INC-2077,2025-04-19,Austin Plant 2,Falcon v3,Servo overheating after 6h continuous run,Added active cooling bracket
+INC-2091,2025-05-02,Leipzig Hub,Falcon v2,Payload sensor false positive,Replaced sensor unit
+INC-2103,2025-06-14,Reno DC,Falcon v3,Network dropout during OTA update,Switched to wired uplink for updates

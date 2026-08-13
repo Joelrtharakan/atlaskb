@@ -7,7 +7,7 @@ import { ContourProgress } from "@/components/ui/ContourProgress";
 import { ApiError, api } from "@/lib/api";
 import type { DocumentOut } from "@/lib/types";
 
-const ACCEPT = ".pdf,.md,.markdown,.html,.htm";
+const ACCEPT = ".pdf,.md,.markdown,.html,.htm,.docx,.xlsx,.pptx,.csv,.txt";
 
 // Upload a source file, then hand the created document back so the register can
 // poll it to ready/failed. Errors state what happened and what to do next.
@@ -19,7 +19,7 @@ export function UploadControl({ onUploaded }: { onUploaded: (doc: DocumentOut) =
 
   async function handleUpload() {
     if (!file) {
-      setError("Choose a PDF, Markdown, or HTML file first.");
+      setError("Choose a file first.");
       return;
     }
     setError(null);
@@ -44,7 +44,8 @@ export function UploadControl({ onUploaded }: { onUploaded: (doc: DocumentOut) =
     <div className="border border-graphite/30 bg-linen/50 p-4">
       <p className="font-mono text-xs uppercase tracking-cartouche text-graphite">Add territory</p>
       <p className="mt-1 text-sm text-graphite">
-        Upload a PDF, Markdown, or HTML file. AtlasKB surveys it into searchable chunks.
+        Upload a PDF, Word, Excel, CSV, plain text, PowerPoint, Markdown, or HTML file. AtlasKB
+        surveys it into searchable chunks.
       </p>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">

@@ -122,7 +122,11 @@ export function SearchView() {
                       <p className="plate-meta mt-1 flex flex-wrap gap-x-3 font-mono text-[10px] text-graphite">
                         <span>dense {formatScore(chunk.dense_score)}</span>
                         <span>sparse {formatScore(chunk.sparse_score)}</span>
-                        {chunk.page_num != null ? <span>page {chunk.page_num}</span> : null}
+                        {chunk.page_num != null ? (
+                          <span>page {chunk.page_num}</span>
+                        ) : chunk.section ? (
+                          <span>{chunk.section}</span>
+                        ) : null}
                         <span className="truncate">{chunk.chunk_id.slice(0, 8)}</span>
                       </p>
                     </div>

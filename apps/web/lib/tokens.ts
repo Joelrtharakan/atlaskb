@@ -43,3 +43,25 @@ export function setActiveWorkspace(id: string | null): void {
   if (id) window.localStorage.setItem(WORKSPACE_KEY, id);
   else window.localStorage.removeItem(WORKSPACE_KEY);
 }
+
+const LAST_CONVERSATION_PREFIX = "atlaskb.lastConversation.";
+
+/** The last conversation the user was actively viewing in this workspace —
+ * scoped per workspace so switching workspaces never lands on a conversation
+ * that belongs to a different tenant. Used only to pick a starting point for
+ * bare `/chat`; the conversation itself is always re-fetched from the
+ * backend, never trusted from this alone. */
+export function getLastActiveConversation(workspaceId: string): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(LAST_CONVERSATION_PREFIX + workspaceId);
+}
+
+export function setLastActiveConversation(workspaceId: string, conversationId: string): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LAST_CONVERSATION_PREFIX + workspaceId, conversationId);
+}
+
+export function clearLastActiveConversation(workspaceId: string): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(LAST_CONVERSATION_PREFIX + workspaceId);
+}

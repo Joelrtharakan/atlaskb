@@ -358,6 +358,13 @@ class Message(Base):
     workspace_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
     role: Mapped[str] = mapped_column(String(16), nullable=False)  # "user" | "assistant"
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    # Full ChatResponse payload (citations, evidence, trust_summary, conflicts,
+    # retrieved chunks) for an assistant message — None for user messages and
+    # for assistant messages written before this column existed. Without this,
+    # reopening a past conversation could only ever show plain text: citations,
+    # the trust panel, and "Why this answer?" all depend on data this table
+    # never used to keep.
+    response_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

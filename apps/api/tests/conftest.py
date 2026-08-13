@@ -191,7 +191,7 @@ def stub_llm(monkeypatch):
     def fake_assess(question, chunks):
         return Assessment(sufficient=True, refined_query=None)
 
-    def fake_generate(question, chunks):
+    def fake_generate(question, chunks, history=None):
         if not chunks:
             return GroundedAnswer(False, CANNOT_ANSWER, [])
         return GroundedAnswer(

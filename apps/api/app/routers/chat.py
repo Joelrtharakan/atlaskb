@@ -127,17 +127,22 @@ def _answer_temporal_question(
             role="assistant", content=message,
         )
         db.add(assistant_message)
-        db.commit()
+        # id's `default=_uuid` is a Python-side default SQLAlchemy applies at
+        # flush, not at construction — without this flush, .id below is None.
+        db.flush()
         log.info(
             "chat.trace", user_id=principal.user_id, cached=False, trust_mode=trust_mode,
             answerable=False, temporal_intent=temporal.intent, stage_durations_ms=timer.as_dict(),
         )
-        return ChatResponse(
+        response = ChatResponse(
             answerable=False, answer=message, citations=[], retrieved=[],
             message_id=assistant_message.id, cached=False, conversation_id=convo.id,
             iterations=0, queries=[question], usage=TokenUsageOut(), temporal=temporal,
             trust_mode=trust_mode,
         )
+        assistant_message.response_json = response.model_dump(mode="json")
+        db.commit()
+        return response
 
     with timer.stage("temporal_resolution"):
         embedding = None if settings.retrieval_mode == "sparse_only" else embed_query(question)
@@ -190,12 +195,12 @@ def _answer_temporal_question(
             role="assistant", content=summary,
         )
         db.add(assistant_message)
-        db.commit()
+        db.flush()  # populate .id (Python-side default, applied at flush)
         log.info(
             "chat.trace", user_id=principal.user_id, cached=False, trust_mode=trust_mode,
             answerable=True, temporal_intent=intent.value, stage_durations_ms=timer.as_dict(),
         )
-        return ChatResponse(
+        response = ChatResponse(
             answerable=True, answer=summary, citations=citations, retrieved=[],
             message_id=assistant_message.id, cached=False, conversation_id=convo.id,
             iterations=0, queries=[question], usage=TokenUsageOut(),
@@ -219,6 +224,9 @@ def _answer_temporal_question(
                 ],
             ),
         )
+        assistant_message.response_json = response.model_dump(mode="json")
+        db.commit()
+        return response
 
     # HISTORICAL or VERSION_SPECIFIC: answer grounded in exactly one version.
     resolution = resolve_version_reference(question, versions)
@@ -262,13 +270,13 @@ def _answer_temporal_question(
         role="assistant", content=grounded.answer,
     )
     db.add(assistant_message)
-    db.commit()
+    db.flush()  # populate .id (Python-side default, applied at flush)
     log.info(
         "chat.trace", user_id=principal.user_id, cached=False, trust_mode=trust_mode,
         answerable=grounded.answerable, temporal_intent=intent.value,
         retrieval_count=len(retrieved_chunks), stage_durations_ms=timer.as_dict(),
     )
-    return ChatResponse(
+    response = ChatResponse(
         answerable=grounded.answerable,
         answer=grounded.answer,
         citations=citations,
@@ -295,6 +303,9 @@ def _answer_temporal_question(
             resolved_version_number=resolution.version.version_number,
         ),
     )
+    assistant_message.response_json = response.model_dump(mode="json")
+    db.commit()
+    return response
 
 
 @router.post("", response_model=ChatResponse)
@@ -360,7 +371,9 @@ def chat(
             content=cached["answer"],
         )
         db.add(assistant_message)
-        db.commit()
+        # id's `default=_uuid` is a Python-side default SQLAlchemy applies at
+        # flush, not at construction — without this flush, .id below is None.
+        db.flush()
         # Trust Layer Phase 13: one structured trace line per request, with
         # every field the spec asked for (stage durations, model, trust
         # mode, cache hit/miss, final answer status) — never raw document
@@ -377,7 +390,7 @@ def chat(
         cached_citations = [Citation(**c) for c in cached["citations"]]
         cached_evidence = [Evidence(**e) for e in cached.get("evidence", [])]
         cached_conflicts = [Conflict(**c) for c in cached.get("conflicts", [])]
-        return ChatResponse(
+        payload = ChatResponse(
             answerable=cached["answerable"],
             answer=cached["answer"],
             citations=cached_citations,
@@ -397,6 +410,12 @@ def chat(
                 citations=cached_citations, evidence=cached_evidence, conflicts=cached_conflicts,
             ),
         )
+        # `cached=True` reflects this specific request; the stored record
+        # should look exactly like the original answer on rehydration, not
+        # remember that some later repeat of the question hit cache.
+        assistant_message.response_json = payload.model_dump(mode="json") | {"cached": False}
+        db.commit()
+        return payload
 
     def retrieve(query: str):
         # sparse_only mode (T9.0) never needs a vector at all — skip the
@@ -579,7 +598,9 @@ def chat(
         content=answer,
     )
     db.add(assistant_message)
-    db.commit()
+    # id's `default=_uuid` is a Python-side default SQLAlchemy applies at
+    # flush, not at construction — without this flush, .id below is None.
+    db.flush()
 
     total_usage = result.usage + conflict_usage
     usage = TokenUsageOut(
@@ -616,6 +637,8 @@ def chat(
             citations=citations, evidence=evidence, conflicts=conflicts,
         ),
     )
+    assistant_message.response_json = payload.model_dump(mode="json")
+    db.commit()
     # Write-through (without the per-request conversation_id / cached flag).
     cache_set(
         key,

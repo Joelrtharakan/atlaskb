@@ -302,6 +302,10 @@ export type Message = {
   content: string;
   created_at: string;
   feedback: Feedback | null;
+  // The full ChatResponse this assistant message was created from — null for
+  // user messages and for assistant messages written before this field
+  // existed (rehydration then falls back to plain text for that turn).
+  response: ChatResponse | null;
 };
 
 export type ConversationSummary = {

@@ -230,7 +230,7 @@ export const api = {
       method: "POST",
       body: form,
       messages: {
-        415: "AtlasKB reads PDF, Markdown, and HTML. Convert this file and upload it again.",
+        415: "AtlasKB reads PDF, Word, Excel, CSV, plain text, PowerPoint, Markdown, and HTML. Convert this file and upload it again.",
         413: "That file is too large to upload. Split it into smaller documents.",
         403: "Only the document's owner or a workspace admin can re-upload it.",
       },
@@ -271,7 +271,7 @@ export const api = {
       method: "POST",
       body: form,
       messages: {
-        415: "AtlasKB reads PDF, Markdown, and HTML. Convert this file and upload it again.",
+        415: "AtlasKB reads PDF, Word, Excel, CSV, plain text, PowerPoint, Markdown, and HTML. Convert this file and upload it again.",
         413: "That file is too large to upload. Split it into smaller documents.",
       },
     });
@@ -284,10 +284,12 @@ export const api = {
     });
   },
 
-  async chat(question: string, topK = 8): Promise<ChatResponse> {
+  /** `conversationId` omitted (or "new") starts a fresh conversation server-side;
+   * the returned `conversation_id` is what the caller should then navigate to. */
+  async chat(question: string, topK = 8, conversationId?: string | null): Promise<ChatResponse> {
     return request<ChatResponse>("/chat", {
       method: "POST",
-      ...jsonBody({ question, top_k: topK }),
+      ...jsonBody({ question, top_k: topK, conversation_id: conversationId ?? null }),
       messages: {
         503: "The answer service isn't configured. Set OPENROUTER_API_KEY on the backend and retry.",
         502: "The answer service failed upstream. Wait a moment and ask again.",
@@ -303,12 +305,21 @@ export const api = {
     });
   },
 
-  async listConversations(): Promise<ConversationSummary[]> {
-    return request<ConversationSummary[]>("/conversations");
+  /** Ordered by most recent activity (a new message bumps a conversation
+   * back to the top), not creation time. */
+  async listConversations(limit = 50, offset = 0): Promise<ConversationSummary[]> {
+    return request<ConversationSummary[]>(`/conversations?limit=${limit}&offset=${offset}`);
   },
 
   async getConversation(id: string): Promise<ConversationDetail> {
     return request<ConversationDetail>(`/conversations/${id}`, {
+      messages: { 404: "That conversation doesn't exist, or it isn't yours." },
+    });
+  },
+
+  async deleteConversation(id: string): Promise<void> {
+    return request<void>(`/conversations/${id}`, {
+      method: "DELETE",
       messages: { 404: "That conversation doesn't exist, or it isn't yours." },
     });
   },

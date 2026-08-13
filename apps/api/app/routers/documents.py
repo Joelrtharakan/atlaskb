@@ -55,11 +55,22 @@ _ALLOWED = {
     "text/markdown": ".md",
     "text/x-markdown": ".md",
     "text/html": ".html",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "text/csv": ".csv",
+    "text/plain": ".txt",
 }
-_ALLOWED_SUFFIXES = {".pdf", ".md", ".markdown", ".html", ".htm"}
+_ALLOWED_SUFFIXES = {
+    ".pdf", ".md", ".markdown", ".html", ".htm", ".docx", ".xlsx", ".pptx", ".csv", ".txt",
+}
 
 
 def _resolve_extension(upload: UploadFile) -> str:
+    # Checked against *both* content_type and extension (either recognizing
+    # it is enough to accept, since browsers/OSes are inconsistent about
+    # setting content_type) — never trusting the extension alone, which is
+    # what actually determines which parser this file gets routed to.
     suffix = Path(upload.filename or "").suffix.lower()
     if upload.content_type in _ALLOWED:
         return _ALLOWED[upload.content_type]
@@ -67,7 +78,8 @@ def _resolve_extension(upload: UploadFile) -> str:
         return ".md" if suffix == ".markdown" else suffix
     raise HTTPException(
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-        "Only PDF, Markdown, or HTML files are supported.",
+        "Only PDF, Word (.docx), Excel (.xlsx), CSV, plain text, PowerPoint "
+        "(.pptx), Markdown, or HTML files are supported.",
     )
 
 

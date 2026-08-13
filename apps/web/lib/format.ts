@@ -28,3 +28,22 @@ export function formatScore(n: number | null): string {
   if (n == null) return "—";
   return n.toFixed(4);
 }
+
+/** "3m ago" / "2d ago" style — for lists (conversation switcher) where a
+ * full date is more precision than the glance-value of the entry needs.
+ * Falls back to `formatDate` past a week, where relative phrasing stops
+ * being more legible than a plain date. */
+export function formatRelative(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const seconds = Math.round((Date.now() - d.getTime()) / 1000);
+  if (seconds < 5) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatDate(iso);
+}

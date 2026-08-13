@@ -27,6 +27,13 @@ route between them, and rings any node that's stale or in conflict.
 
 ---
 
+**Contents:** [What it does](#what-it-does) · [Architecture](#architecture) ·
+[How it works](#how-it-works) · [Scalability](#scalability-trust-layer-t11) ·
+[Measured results](#measured-results) · [Tech stack](#tech-stack) ·
+[Quickstart](#quickstart) · [Tests, eval & load](#tests-eval--load) ·
+[API surface](#api-surface) · [Repository layout](#repository-layout) ·
+[Status](#status)
+
 ## What it does
 
 **Core RAG loop**
@@ -743,7 +750,7 @@ cd apps/web && npm install && npm run dev      # http://localhost:3000
 
 ```bash
 # Backend unit + integration tests (real Postgres+pgvector, dedicated Redis DB)
-cd apps/api && uv run pytest                     # 111 passing
+cd apps/api && uv run pytest                     # 259 passing
 
 # Frontend end-to-end (Playwright drives signup→upload→ask→cited answer, +atlas)
 cd apps/web && npx playwright install chromium && npm run test:e2e

@@ -1,0 +1,20 @@
+Falcon v3 Release Notes - Internal Distribution
+
+Falcon v3 is the third-generation robotic arm in the Falcon product line,
+succeeding Falcon v2. The headline change in v3 is the rated payload
+capacity, which increases to 12 kg from v2's 8 kg rating.
+
+Key changes from v2 to v3:
+
+The reach envelope increases by 15 percent, driven by a redesigned forearm
+linkage. Servo cooling was reworked after early field units reported
+overheating during continuous multi-hour runs, and v3 ships with an active
+cooling bracket as standard rather than an optional add-on.
+
+Known limitation: Falcon v3 firmware prior to 3.2.0 does not support
+over-the-air updates over a wireless uplink reliably in facilities with
+dense 2.4GHz interference; a wired update path is recommended until 3.2.0
+ships.
+
+Falcon v3 is certified to ISO/TS 15066 for collaborative robot safety, the
+same standard v2 was certified to.

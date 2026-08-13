@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { Atlas2DFallback } from "@/components/living-atlas/Atlas2DFallback";
@@ -9,8 +10,10 @@ import { useCapabilities } from "@/components/living-atlas/use-capabilities";
 import { ContourProgress } from "@/components/ui/ContourProgress";
 import { ApiError, api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import type { ChatResponse, Conflict, DocumentOut, Evidence } from "@/lib/types";
+import { getActiveWorkspace, setLastActiveConversation } from "@/lib/tokens";
+import type { ChatResponse, Conflict, DocumentOut, Evidence, Feedback } from "@/lib/types";
 
+import { ConversationList } from "./ConversationList";
 import { numberSources, renderAnswerWithCitations } from "./citations";
 
 // The Three.js scene is loaded on demand (client-only), so pages that never
@@ -28,7 +31,11 @@ const LivingAtlas = dynamic(() => import("@/components/living-atlas/LivingAtlas"
 type Entry =
   | { kind: "question"; id: string; at: string; text: string }
   | { kind: "pending"; id: string }
-  | { kind: "answer"; id: string; at: string; resp: ChatResponse; question: string }
+  | { kind: "answer"; id: string; at: string; resp: ChatResponse; question: string; feedback: Feedback | null }
+  // A rehydrated assistant turn from before `response_json` existed on the
+  // backend (or a temporal-question refusal path that predates it) — no
+  // citations/evidence/trust panel to show, just the answer text itself.
+  | { kind: "legacy-answer"; id: string; at: string; text: string; feedback: Feedback | null }
   | { kind: "error"; id: string; at: string; message: string };
 
 type AtlasState = {
@@ -76,6 +83,12 @@ const SETTLE_MS = 1800;
 
 function now(): string {
   return new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+/** Same format as `now()`, but for a rehydrated message's real `created_at`
+ * instead of the current time. */
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
 function uniq(xs: string[]): string[] {
@@ -231,8 +244,14 @@ function WhyThisAnswer({ resp, question }: { resp: ChatResponse; question: strin
 /** Thumbs up/down on one answer. Optimistic — the rating is local until the
  * request lands, and reverts if it fails, since a stale "thanks!" is worse
  * than a moment of lag. */
-function FeedbackButtons({ messageId }: { messageId: string }) {
-  const [rating, setRating] = useState<"up" | "down" | null>(null);
+function FeedbackButtons({
+  messageId,
+  initialRating = null,
+}: {
+  messageId: string;
+  initialRating?: Feedback | null;
+}) {
+  const [rating, setRating] = useState<"up" | "down" | null>(initialRating);
   const [pending, setPending] = useState(false);
 
   async function rate(next: "up" | "down") {
@@ -358,10 +377,12 @@ function AnswerEntry({
   resp,
   question,
   onHoverDoc,
+  feedback = null,
 }: {
   resp: ChatResponse;
   question: string;
   onHoverDoc: (documentId: string | null) => void;
+  feedback?: Feedback | null;
 }) {
   const { order } = numberSources(resp);
 
@@ -394,7 +415,11 @@ function AnswerEntry({
                 onMouseLeave={() => onHoverDoc(null)}
               >
                 <span className="rounded-sm bg-beacon/90 px-1 text-ink">[{s.index}]</span>
-                <span>{s.chunk?.page_num != null ? `page ${s.chunk.page_num}` : "—"}</span>
+                <span>
+                  {s.chunk?.page_num != null
+                    ? `page ${s.chunk.page_num}`
+                    : (s.chunk?.section ?? "—")}
+                </span>
                 <span className="truncate">{s.chunkId}</span>
               </li>
             ))}
@@ -404,20 +429,33 @@ function AnswerEntry({
       <TrustSummaryBlock resp={resp} />
       <ConflictsPanel conflicts={resp.conflicts ?? []} />
       <WhyThisAnswer resp={resp} question={question} />
-      {resp.message_id ? <FeedbackButtons messageId={resp.message_id} /> : null}
+      {resp.message_id ? (
+        <FeedbackButtons messageId={resp.message_id} initialRating={feedback} />
+      ) : null}
     </div>
   );
 }
 
-export function ChatView() {
+export function ChatView({ conversationId }: { conversationId: string }) {
+  const router = useRouter();
+  const isNew = conversationId === "new";
   const capabilities = useCapabilities();
   const [docs, setDocs] = useState<DocumentOut[] | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [hydrating, setHydrating] = useState(!isNew);
   const [question, setQuestion] = useState("");
   const [pending, setPending] = useState(false);
   const [atlas, setAtlas] = useState<AtlasState>(IDLE);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [atlasOpen, setAtlasOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyRef = useRef<HTMLDivElement>(null);
+  // Which conversationId `entries` currently, correctly represents — lets
+  // the hydration effect below tell "the URL changed because we ourselves
+  // just navigated after creating a conversation" (skip, entries are
+  // already right) apart from "the URL changed for some other reason —
+  // sidebar click, browser back/forward, a fresh page load" (re-hydrate).
+  const handledConversationId = useRef<string | null>(null);
   // Desktop-only draggable split between the answer panel and the Living
   // Atlas — the atlas previously had a fixed 420px width, too cramped for
   // the 3D scene on some layouts and not adjustable at all. Persisted so a
@@ -493,6 +531,91 @@ export function ChatView() {
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
+  useEffect(() => {
+    if (!historyOpen) return;
+    function onClick(e: MouseEvent) {
+      if (!historyRef.current?.contains(e.target as Node)) setHistoryOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setHistoryOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [historyOpen]);
+
+  // The URL is the source of truth for the active conversation (see the
+  // route's own comment) — this is what actually fixes "navigate away and
+  // back loses history": it never trusts in-memory `entries` to have
+  // survived, it always re-derives from conversationId + a real fetch.
+  useEffect(() => {
+    if (handledConversationId.current === conversationId) return;
+    handledConversationId.current = conversationId;
+    clearTimers();
+    // Living Atlas re-hydration (deliberate choice, not an oversight):
+    // resets to ambient/idle rather than replaying the last answer's
+    // camera fly-through and citation rings. Reconstructing that flight
+    // would need every historical turn's retrieved/cited doc ids, staleness,
+    // and conflict pairs persisted and replayed in order — real work for a
+    // payoff that's purely cosmetic on a page that already shows the same
+    // information as static text (the rehydrated answer entries below,
+    // full citations included). Ambient here, back to normal on the next
+    // new question, same as a first-ever visit to the atlas.
+    setAtlas(IDLE);
+    setHighlightedId(null);
+    reqId.current++; // invalidate any in-flight request tied to the conversation just left
+
+    if (isNew) {
+      setEntries([]);
+      setHydrating(false);
+      return;
+    }
+
+    setHydrating(true);
+    api
+      .getConversation(conversationId)
+      .then((detail) => {
+        const built: Entry[] = [];
+        let lastQuestion = "";
+        for (const m of detail.messages) {
+          if (m.role === "user") {
+            lastQuestion = m.content;
+            built.push({ kind: "question", id: m.id, at: fmtTime(m.created_at), text: m.content });
+          } else if (m.response) {
+            built.push({
+              kind: "answer",
+              id: m.id,
+              at: fmtTime(m.created_at),
+              resp: m.response,
+              question: lastQuestion,
+              feedback: m.feedback,
+            });
+          } else {
+            built.push({
+              kind: "legacy-answer",
+              id: m.id,
+              at: fmtTime(m.created_at),
+              text: m.content,
+              feedback: m.feedback,
+            });
+          }
+        }
+        setEntries(built);
+        const workspaceId = getActiveWorkspace();
+        if (workspaceId) setLastActiveConversation(workspaceId, conversationId);
+      })
+      .catch(() => {
+        // Deleted, belongs to another workspace, or otherwise unreachable —
+        // fail open to a fresh draft rather than leaving a dead page up.
+        router.replace("/chat/new");
+      })
+      .finally(() => setHydrating(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, isNew]);
+
   const scheduleSettle = useCallback((id: number) => {
     timers.current.push(
       setTimeout(() => {
@@ -536,7 +659,7 @@ export function ChatView() {
       .catch(() => {});
 
     try {
-      const resp = await api.chat(text, 3);
+      const resp = await api.chat(text, 3, isNew ? undefined : conversationId);
       const docByChunk = new Map(resp.retrieved.map((c) => [c.chunk_id, c.document_id] as const));
       const retrievedDocs = uniq(resp.retrieved.map((c) => c.document_id));
       const citedDocs = uniq(
@@ -548,7 +671,9 @@ export function ChatView() {
       if (reqId.current === id) {
         setEntries((prev) =>
           prev.map((entry) =>
-            entry.id === pid ? { kind: "answer", id: pid, at: now(), resp, question: text } : entry,
+            entry.id === pid
+              ? { kind: "answer", id: pid, at: now(), resp, question: text, feedback: null }
+              : entry,
           ),
         );
         setAtlas({
@@ -560,6 +685,20 @@ export function ChatView() {
           phase: "answered",
         });
         scheduleSettle(id);
+
+        const workspaceId = getActiveWorkspace();
+        if (resp.conversation_id) {
+          if (workspaceId) setLastActiveConversation(workspaceId, resp.conversation_id);
+          // A brand-new conversation just got its first real id — make the
+          // URL durably addressable. `entries` already reflects this turn
+          // correctly, so mark the id "handled" before navigating: the
+          // hydration effect above must not re-fetch and clobber what's
+          // already on screen when the URL prop updates.
+          if (isNew && resp.conversation_id !== conversationId) {
+            handledConversationId.current = resp.conversation_id;
+            router.replace(`/chat/${resp.conversation_id}`);
+          }
+        }
       }
     } catch (err) {
       const message =
@@ -682,12 +821,53 @@ export function ChatView() {
           fully functional, and now `order-1` so it's read/laid out before
           the atlas in both the mobile stack and the desktop row. --- */}
       <aside className="order-1 flex min-h-0 w-full flex-1 flex-col">
+        {/* New Chat / conversation switcher — the only way to reach any of
+            this before now was losing the current transcript on navigation. */}
+        <div className="flex items-center justify-between gap-2 border-b border-graphite/25 px-4 py-2 sm:px-6">
+          <div ref={historyRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setHistoryOpen((o) => !o)}
+              aria-expanded={historyOpen}
+              aria-haspopup="dialog"
+              className="font-mono text-xs uppercase tracking-cartouche text-graphite transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
+            >
+              History {historyOpen ? "▴" : "▾"}
+            </button>
+            {historyOpen ? (
+              <ConversationList
+                activeId={conversationId}
+                onNavigate={(id) => {
+                  setHistoryOpen(false);
+                  router.push(`/chat/${id}`);
+                }}
+                onDeletedActive={() => {
+                  setHistoryOpen(false);
+                  router.push("/chat/new");
+                }}
+                onClose={() => setHistoryOpen(false)}
+              />
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/chat/new")}
+            className="font-mono text-xs uppercase tracking-cartouche text-graphite transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pewter"
+          >
+            + New chat
+          </button>
+        </div>
+
         <div
           role="log"
           aria-label="Question and answer log"
           className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6"
         >
-          {entries.length === 0 ? (
+          {hydrating ? (
+            <div className="flex h-full items-center justify-center">
+              <ContourProgress size={40} label="Loading this conversation" />
+            </div>
+          ) : entries.length === 0 ? (
             <div className="flex h-full flex-col justify-center gap-3">
               <h1 className="font-display text-2xl font-medium text-ink">Ask your atlas</h1>
               <p className="max-w-sm text-sm text-graphite">
@@ -727,12 +907,29 @@ export function ChatView() {
                     </li>
                   );
                 }
+                if (entry.kind === "legacy-answer") {
+                  // Rehydrated from before response_json existed — plain
+                  // text only, no citations/trust panel to reconstruct.
+                  return (
+                    <li key={entry.id} className="chat-enter flex flex-col items-start gap-1">
+                      <span className="marginalia text-[0.7rem]">{entry.at} · answer</span>
+                      <div className="max-w-[92%] border-l-2 border-graphite/40 pl-4">
+                        <p className="text-sm leading-relaxed text-ink">{entry.text}</p>
+                      </div>
+                    </li>
+                  );
+                }
                 // Assistant message: left-aligned, parchment.
                 return (
                   <li key={entry.id} className="chat-enter flex flex-col items-start gap-1">
                     <span className="marginalia text-[0.7rem]">{entry.at} · answer</span>
                     <div className="max-w-[92%]">
-                      <AnswerEntry resp={entry.resp} question={entry.question} onHoverDoc={setHighlightedId} />
+                      <AnswerEntry
+                        resp={entry.resp}
+                        question={entry.question}
+                        onHoverDoc={setHighlightedId}
+                        feedback={entry.feedback}
+                      />
                     </div>
                   </li>
                 );

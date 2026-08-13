@@ -8,7 +8,7 @@ import { ApiError, api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import type { DocumentDetail, DocumentVersion } from "@/lib/types";
 
-const ACCEPT = ".pdf,.md,.markdown,.html,.htm";
+const ACCEPT = ".pdf,.md,.markdown,.html,.htm,.docx,.xlsx,.pptx,.csv,.txt";
 
 /**
  * A document's version history plus, for those who can manage it, a control to

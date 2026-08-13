@@ -83,34 +83,27 @@
   }
 }
 
-/* Documents "rack": thin brass-edged plates in a gently receding row. Fake-3D
-   via CSS perspective + rotateY — cheap enough for a long list (no WebGL). */
-.doc-rack {
-  perspective: 1600px;
-}
+/* Documents "rack": thin brass-edged plates in a plain vertical list. Flat
+   at rest and on hover — no 3D tilt/perspective. That was tried (fake-3D via
+   rotateY + a blurred brass "rim-light" box-shadow) and looked broken in
+   practice: the shadow bloomed in a soft rounded halo above and below each
+   sharp-edged rectangular row, and on a plain list (not an actual recessed
+   3D rack) the tilt just read as glitchy. Hover is now just a background
+   lighten + a brightened border — clean, flat, on-brand. */
 .doc-plate {
-  transform: rotateY(-7deg);
-  transform-origin: left center;
   transition:
-    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.45s ease,
-    border-color 0.45s ease;
+    background-color 0.2s ease,
+    border-color 0.2s ease;
   border-left: 2px solid theme("colors.brass");
   background-color: theme("colors.deep-chart");
 }
 .doc-plate:hover,
 .doc-plate:focus-within {
-  transform: rotateY(0deg) translateZ(30px);
-  box-shadow: -8px 0 28px -8px rgba(192, 138, 69, 0.55); /* brass rim-light */
+  background-color: #1c2c3a; /* deep-chart, a couple shades lighter */
   border-color: theme("colors.brass");
 }
 .plate-meta {
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-.doc-plate:hover .plate-meta,
-.doc-plate:focus-within .plate-meta {
-  opacity: 1;
+  opacity: 0.85;
 }
 
 /* One cohesive page-transition: incoming content fades + rises as a single
